@@ -181,6 +181,8 @@ h2{font-family:var(--f-display);font-weight:700;font-size:23px;margin:0}
 .m-opt[aria-pressed="true"] .ck{background:var(--accent);border-color:var(--accent)}
 .m-opt[aria-pressed="true"] .ck svg{opacity:1}
 .m-opt[aria-pressed="false"]{opacity:.55}
+.m-who{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);font-weight:700;margin-top:3px}
+.m-opt span:nth-child(2){display:flex;flex-direction:column}
 .m-sum{display:flex;flex-direction:column;gap:8px;width:100%;text-align:left}
 .m-sumrow{display:flex;align-items:center;gap:10px;background:var(--surface);border-radius:14px;padding:8px 12px;box-shadow:var(--shadow)}
 .m-sumrow b{flex:none}
@@ -423,10 +425,17 @@ const task = id => S.aufgaben[id] ? { id, ...S.aufgaben[id] } : null;
 const modus = a => a.modus || "ki";
 const day = (d = today()) => S.tage[d] || {};
 const fixedWer = a => arr(a.wer).filter(id => S.mitglieder[id]);
+function scheduledOn(a, d){
+  if (a.wiederholung === "taeglich") return true;
+  if (a.wiederholung === "woechentlich") return arr(a.tage).map(Number).includes(parseYmd(d).getDay());
+  return false;
+}
 function dueOn(a, d){
   const wd = parseYmd(d).getDay();
-  if (a.wiederholung === "taeglich") return true;
-  if (a.wiederholung === "woechentlich") return arr(a.tage).map(Number).includes(wd);
+  if (a.wiederholung === "taeglich" || a.wiederholung === "woechentlich"){
+    if (!scheduledOn(a, d)) return false;
+    const m = day(d).morgen; return !!(m && m.ok && arr(m.extra).includes(a.id));
+  }
   if (a.wiederholung === "morgen"){ const m = day(d).morgen; return m && m.ok ? arr(m.auswahl).includes(a.stdKey) : true; }
   if (!a.datum) return false;
   if (a.datum === d) return true;
@@ -854,10 +863,15 @@ let morningOpen = false;
 const morningNeeded = () => isAdmin() && !kitchenMode && !day().morgen?.ok && ls.get("fp_morgen_later", "") !== today() && new Date().getHours() >= 4;
 function openMorning(){
   morningOpen = true;
-  let step = 0, sel = new Set(STD.map(t => t.key)), extra = "", stopMic = () => {}, result = null;
+  const d0 = today();
+  const extras = tasks().filter(a => scheduledOn(a, d0)).sort((a,b) => (fixedWer(a)[0]||"~").localeCompare(fixedWer(b)[0]||"~") || (a.titel||"").localeCompare(b.titel||""));
+  const prev = day(d0).morgen;
+  let step = 0, sel = new Set(prev?.auswahl ? arr(prev.auswahl) : STD.map(t => t.key)), xsel = new Set(prev?.extra ? arr(prev.extra) : []), stopMic = () => {}, result = null;
   const [vt, vr] = verseOfDay();
   const name = me()?.name || "Mama";
-  const dots = () => `<div class="m-dots">${[0,1,2].map(i => `<i class="${i<=step?'on':''}"></i>`).join("")}</div>`;
+  // Schritte: 0 Begrüßung, 1 Routine, 2 Zusatzaufgaben, 3 Noch etwas?, 4 Moment, 5 Danke
+  const dots = () => `<div class="m-dots">${[1,2,3].map(i => `<i class="${i<=step?'on':''}"></i>`).join("")}</div>`;
+  const whoTxt = a => { const w = fixedWer(a); return w.length ? `${stack(w, 22)}<span>${esc(namesOf(w))}</span>` : `<span>KI verteilt</span>`; };
   const draw = () => {
     let h = "";
     if (step === 0) h = `<div class="m-card"><div class="m-cross">${ICON.cross}</div><div class="eyebrow">${WT[new Date().getDay()]}, ${new Date().getDate()}. ${MONL[new Date().getMonth()]}</div>
@@ -867,12 +881,15 @@ function openMorning(){
     if (step === 1) h = `<div class="m-card">${dots()}<h1 class="m-title">Was steht heute an?</h1><p class="m-lead">Tippe weg, was heute nicht nötig ist.</p>
         <div class="m-grid">${STD.map(t => `<button class="m-opt" data-k="${t.key}" aria-pressed="${sel.has(t.key)}"><span class="ti">${catIcon(t.kategorie)}</span><span>${esc(t.titel)}</span><span class="ck">${ICON.check}</span></button>`).join("")}</div>
         <div class="m-actions"><button class="btn link" data-m="back">Zurück</button><button class="btn big" data-m="next">Weiter</button></div></div>`;
-    if (step === 2) h = `<div class="m-card">${dots()}<h1 class="m-title">Noch etwas?</h1><p class="m-lead">Sag einfach, was sonst noch zu tun ist. Ich verteile es.</p>
+    if (step === 2) h = `<div class="m-card">${dots()}<h1 class="m-title">Kommt heute noch etwas dazu?</h1><p class="m-lead">Tippe an, was heute auch gemacht werden soll.</p>
+        <div class="m-grid">${extras.map(a => `<button class="m-opt" data-x="${a.id}" aria-pressed="${xsel.has(a.id)}"><span class="ti">${catIcon(a.kategorie)}</span><span>${esc(a.titel)}<small class="m-who">${whoTxt(a)}</small></span><span class="ck">${ICON.check}</span></button>`).join("")}</div>
+        <div class="m-actions"><button class="btn link" data-m="none">Nichts davon</button><button class="btn big" data-m="next">Weiter</button></div></div>`;
+    if (step === 3) h = `<div class="m-card">${dots()}<h1 class="m-title">Noch etwas?</h1><p class="m-lead">Sag einfach, was sonst noch zu tun ist. Ich verteile es.</p>
         ${SR ? `<button type="button" class="mic-btn" id="mMic" aria-label="Sprechen">${ICON.mic}</button><p class="hint" id="mHint" style="text-align:center">Antippen und sprechen</p>` : ""}
-        <div class="field"><textarea id="mText" placeholder="z. B. Die Blumen auf dem Balkon gießen und Einkauf wegräumen.">${esc(extra)}</textarea></div>
+        <div class="field"><textarea id="mText" placeholder="z. B. Die Blumen auf dem Balkon gießen und Einkauf wegräumen."></textarea></div>
         <div class="m-actions"><button class="btn link" data-m="skip">Überspringen</button><button class="btn big" data-m="finish">Fertig</button></div></div>`;
-    if (step === 3) h = `<div class="m-card m-center"><div class="m-cross pulse">${ICON.cross}</div><h1 class="m-title">Einen Moment …</h1><p class="m-lead">Ich verteile die Aufgaben auf alle.</p></div>`;
-    if (step === 4){
+    if (step === 4) h = `<div class="m-card m-center"><div class="m-cross pulse">${ICON.cross}</div><h1 class="m-title">Einen Moment …</h1><p class="m-lead">Ich verteile die Aufgaben auf alle.</p></div>`;
+    if (step === 5){
       const [t1, t2] = DANKE[Math.floor(Math.random() * DANKE.length)];
       const rows = members().map(m => ({ m, t: tasksFor(m.id) })).filter(x => x.t.length);
       h = `<div class="m-card m-center"><div class="m-heart">${ICON.heart}</div><h1 class="m-title">${t1}</h1><p class="m-lead">${t2}</p>
@@ -881,14 +898,17 @@ function openMorning(){
         <div class="m-actions" style="justify-content:center"><button class="btn big" data-m="close">Zum Tag</button></div></div>`;
     }
     $("#fullHost").innerHTML = `<div class="fullscreen morning">${h}</div>`;
-    if (step === 2) stopMic = attachMic($("#mMic"), $("#mText"), $("#mHint"));
+    if (step === 3) stopMic = attachMic($("#mMic"), $("#mText"), $("#mHint"));
   };
+  const go = delta => { step += delta; if (step === 2 && !extras.length) step += delta; draw(); };
   const finish = async withText => {
     stopMic();
     const text = withText ? dedupeText(($("#mText")?.value || "")) : "";
-    step = 3; draw();
+    step = 4; draw();
     const d = today();
-    await write({ [`tage/${d}/morgen`]: { ok: true, auswahl: [...sel], zeit: Date.now() }, [`tage/${d}/datum`]: d });
+    const morgen = { ok: true, auswahl: [...sel], extra: [...xsel], zeit: Date.now() };
+    S.tage[d] = { ...(S.tage[d]||{}), datum: d, morgen }; // sofort lokal, damit die Verteilung es schon sieht
+    await write({ [`tage/${d}/morgen`]: morgen, [`tage/${d}/datum`]: d });
     if (S.settings.geminiKey){
       try {
         if (text){ const items = await voiceToTasks(text); if (items.length) await createVoiceTasks(items, false); }
@@ -897,18 +917,21 @@ function openMorning(){
       } catch(e){ result = e.message || "Die KI hat gerade nicht geantwortet."; }
     } else result = "Ohne KI-Schlüssel bleiben die Aufgaben frei zum Übernehmen.";
     await new Promise(r => setTimeout(r, 500)); // kurz warten, bis die Verteilung angekommen ist
-    step = 4; draw();
+    step = 5; draw();
   };
+  const close = () => { morningOpen = false; $("#fullHost").onclick = null; $("#fullHost").innerHTML = ""; };
   $("#fullHost").onclick = e => {
     const o = e.target.closest("[data-k]"); if (o){ const k = o.dataset.k; sel.has(k) ? sel.delete(k) : sel.add(k); o.setAttribute("aria-pressed", sel.has(k)); return; }
+    const x = e.target.closest("[data-x]"); if (x){ const k = x.dataset.x; xsel.has(k) ? xsel.delete(k) : xsel.add(k); x.setAttribute("aria-pressed", xsel.has(k)); return; }
     const b = e.target.closest("[data-m]"); if (!b) return;
     const m = b.dataset.m;
-    if (m === "next"){ step++; draw(); }
-    else if (m === "back"){ step--; draw(); }
-    else if (m === "later"){ ls.set("fp_morgen_later", today()); morningOpen = false; $("#fullHost").onclick = null; $("#fullHost").innerHTML = ""; render(); }
+    if (m === "next") go(1);
+    else if (m === "back") go(-1);
+    else if (m === "none"){ xsel.clear(); go(1); }
+    else if (m === "later"){ ls.set("fp_morgen_later", today()); close(); render(); }
     else if (m === "skip") finish(false);
     else if (m === "finish") finish(true);
-    else if (m === "close"){ morningOpen = false; $("#fullHost").onclick = null; $("#fullHost").innerHTML = ""; tab = "heute"; render(); }
+    else if (m === "close"){ close(); tab = "heute"; render(); }
   };
   draw();
 }
@@ -1012,6 +1035,8 @@ function viewEinstellungen(){
     <div class="setting col"><div class="field"><label for="kiHints">Hinweise für die KI</label><textarea id="kiHints" placeholder="z. B. Am Wochenende sollen die Kinder weniger machen. Esther hilft gern in der Küche.">${esc(S.settings.kiHinweise||"")}</textarea></div>
       <div style="display:flex;justify-content:flex-end"><button class="btn small" id="saveHints">Hinweise speichern</button></div></div>
     <p class="hint">Alter, Beschreibung und eigene Aufgaben stellst du bei jeder Person unter <b>Familie</b> ein.</p></div>
+    <div class="section"><h2>Heute</h2>
+    <div class="setting"><span class="ticon">${ICON.cross}</span><div class="main"><div class="title">Tag neu starten</div><div class="hint">Verteilung und Häkchen von heute löschen, Morgenrunde neu beginnen.</div></div><button class="btn ghost small" id="resetDay">Neu starten</button></div></div>
     <div class="section"><h2>Sicherheit</h2>
     <div class="setting"><span class="ticon">${ICON.lock}</span><div class="main"><div class="title">Admin-PIN</div><div class="hint">${S.settings.pin ? "Gesetzt." : "Keine PIN – jeder kann das Admin-Profil öffnen."}</div></div><button class="btn ghost small" id="setPin">${S.settings.pin?"Ändern":"Festlegen"}</button></div></div>`;
 }
@@ -1299,6 +1324,12 @@ document.addEventListener("click", e => {
   if (q("#runAI")) return makePlan(today(), true);
   if (q("#openVoice")) return voiceSheet();
   if (q("#openMorning")) return openMorning();
+  if (q("#resetDay")) return openSheet(`<h2>Tag neu starten?</h2><p class="hint">Die Verteilung, alle Häkchen und die Morgenrunde von heute werden gelöscht. Deine Aufgaben-Liste bleibt.</p>
+    <div class="sheet-actions"><div class="right"><button type="button" class="btn ghost" id="cancel">Abbrechen</button><button class="btn" type="submit">Neu starten</button></div></div>`, sh => {
+      sh.querySelector("#cancel").onclick = closeSheet;
+      sh.onsubmit = async ev => { ev.preventDefault(); closeSheet(); const d = today(); delete S.tage[d]; try { localStorage.removeItem("fp_morgen_later"); } catch(_){}
+        await write({ [`tage/${d}`]: null }); tab = "heute"; ls.set("fp_tab", tab); render(); };
+    });
   if (q("#seedTasks")) { write(seedTaskUpdates()); toast("Hausarbeiten angelegt"); return; }
   if (q("#openKitchen") || q("#startKitchen") || q("#whoKitchen")) return enterKitchen();
   if (q("#exitKitchen")) return exitKitchen();
