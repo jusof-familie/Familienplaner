@@ -134,6 +134,25 @@ h2{font-family:var(--f-display);font-weight:600;font-size:20px;margin:0}
 .legend-row{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13.5px;color:var(--muted)}
 .legend-row span{display:inline-flex;align-items:center;gap:5px}
 .dot{width:10px;height:10px;border-radius:50%;background:var(--c,var(--muted));flex:none;display:inline-block}
+.verse{display:flex;gap:12px;align-items:flex-start;background:var(--surface);border-radius:16px;box-shadow:var(--shadow);padding:14px 16px;border-left:5px solid var(--warm)}
+.verse svg{width:22px;height:22px;color:var(--warm);flex:none;margin-top:3px}
+.verse q{font-family:var(--f-display);font-weight:600;font-size:19px;line-height:1.3;quotes:"\201E" "\201C";display:block;text-wrap:pretty}
+.verse cite{display:block;font-style:normal;color:var(--muted);font-weight:700;font-size:13.5px;margin-top:4px}
+.k-verse{display:flex;gap:10px;align-items:baseline;justify-content:center;text-align:center;padding:2px 8px;flex-wrap:wrap}
+.k-verse q{font-family:var(--f-display);font-weight:600;font-size:21px;quotes:"\201E" "\201C";text-wrap:balance}
+.k-verse cite{font-style:normal;color:var(--muted);font-weight:700;font-size:14px;white-space:nowrap}
+.mine-list{display:flex;flex-direction:column;gap:10px}
+.mine-list .chip{max-width:none;flex:none;min-height:64px;background:var(--surface);box-shadow:var(--shadow)}
+.mine-list .chip.done{background:var(--ok-soft);box-shadow:none}
+.mine-list .chip.late{background:var(--warm-soft)}
+.mine-list .chip .t{font-size:17px}
+.mic-btn{width:88px;height:88px;border-radius:50%;border:0;background:var(--accent);color:var(--accent-fg);display:grid;place-items:center;margin:0 auto;box-shadow:0 6px 20px rgba(20,60,60,.25)}
+.mic-btn svg{width:40px;height:40px}
+.mic-btn.on{background:var(--danger);animation:pulse 1.2s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(178,58,58,.5)}100%{box-shadow:0 0 0 22px rgba(178,58,58,0)}}
+.voice-item{display:flex;flex-direction:column;gap:8px;background:var(--sunk);border-radius:14px;padding:12px}
+.voice-item .top{display:flex;gap:10px;align-items:center}
+.voice-item .top .main{flex:1;min-width:0}
 .remind{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:var(--r);background:var(--warm-soft);color:var(--warm-fg);border-left:6px solid var(--warm)}
 .remind svg{width:24px;height:24px;flex:none}
 .planinfo{display:flex;align-items:center;gap:10px;font-size:14.5px;color:var(--muted)}
@@ -291,6 +310,8 @@ const ICON = {
   gear: SV('<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>'),
   home: SV('<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M9.5 15l2 2 3.5-3.5"/>'),
   listI: SV('<path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1.5"/><circle cx="4.5" cy="12" r="1.5"/><circle cx="4.5" cy="18" r="1.5"/>'),
+  mic: SV('<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M9 21h6"/>'),
+  book: SV('<path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H20v15H5.5A1.5 1.5 0 0 0 4 19.5z"/><path d="M4 19.5A1.5 1.5 0 0 0 5.5 21H20v-3M12 7v5M9.5 9.5h5"/>'),
   people: SV('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.5 3.3-5.5 6.5-5.5s5.9 2 6.5 5.5"/><circle cx="17.5" cy="9.5" r="2.5"/><path d="M17 14.6c2.4.2 4 1.8 4.5 4.4"/>'),
 };
 const CATS = {
@@ -595,6 +616,135 @@ function progressHtml(){
   const bar = segs.map(x => `<i style="--c:${x.m.farbe};flex-grow:${x.n}"></i>`).join("") + (u.all - u.done ? `<i style="--c:transparent;flex-grow:${u.all-u.done}"></i>` : "");
   return { u, bar, legend: segs.map(x => `<span><i class="dot" style="--c:${x.m.farbe}"></i>${esc(x.m.name)} ${x.n}</span>`).join("") };
 }
+// ---------- Bibelverse (Lutherbibel 1912, gemeinfrei) ----------
+const VERSE = [
+  ["Alles, was ihr tut, das tut von Herzen als dem HERRN und nicht den Menschen.", "Kolosser 3,23"],
+  ["Wo der HERR nicht das Haus baut, so arbeiten umsonst, die daran bauen.", "Psalm 127,1"],
+  ["Siehe, Kinder sind eine Gabe des HERRN, und Leibesfrucht ist ein Geschenk.", "Psalm 127,3"],
+  ["Ich aber und mein Haus wollen dem HERRN dienen.", "Josua 24,15"],
+  ["Sie schaut, wie es in ihrem Hause zugeht, und ißt ihr Brot nicht mit Faulheit.", "Sprüche 31,27"],
+  ["Ihre Söhne kommen auf und preisen sie selig; ihr Mann lobt sie.", "Sprüche 31,28"],
+  ["Kraft und Schöne sind ihr Gewand, und sie lacht des kommenden Tages.", "Sprüche 31,25"],
+  ["Lieblich und schön sein ist nichts; ein Weib, das den HERRN fürchtet, soll man loben.", "Sprüche 31,30"],
+  ["Ihr Kinder, seid gehorsam euren Eltern in dem HERRN; denn das ist billig.", "Epheser 6,1"],
+  ["Ihr Kinder, seid gehorsam den Eltern in allen Dingen; denn das ist dem HERRN gefällig.", "Kolosser 3,20"],
+  ["Du sollst deinen Vater und deine Mutter ehren, auf daß du lange lebest in dem Lande, das dir der HERR, dein Gott, gibt.", "2. Mose 20,12"],
+  ["Mein Kind, gehorche der Zucht deines Vaters und verlaß nicht das Gebot deiner Mutter.", "Sprüche 1,8"],
+  ["Wie man einen Knaben gewöhnt, so läßt er nicht davon, wenn er alt wird.", "Sprüche 22,6"],
+  ["Gehe hin zur Ameise, du Fauler; siehe ihre Weise an und lerne!", "Sprüche 6,6"],
+  ["Wo man arbeitet, da ist genug; wo man aber mit Worten umgeht, da ist Mangel.", "Sprüche 14,23"],
+  ["Einer trage des andern Last, so werdet ihr das Gesetz Christi erfüllen.", "Galater 6,2"],
+  ["Lasset uns aber Gutes tun und nicht müde werden; denn zu seiner Zeit werden wir auch ernten ohne Aufhören.", "Galater 6,9"],
+  ["Alle eure Dinge lasset in der Liebe geschehen!", "1. Korinther 16,14"],
+  ["Dies ist der Tag, den der HERR macht; lasset uns freuen und fröhlich darin sein.", "Psalm 118,24"],
+  ["Ich will euch trösten, wie einen seine Mutter tröstet.", "Jesaja 66,13"],
+  ["Ich vermag alles durch den, der mich mächtig macht, Christus.", "Philipper 4,13"],
+  ["Lasset die Kindlein zu mir kommen und wehret ihnen nicht; denn solcher ist das Reich Gottes.", "Markus 10,14"],
+  ["Die brüderliche Liebe untereinander sei herzlich.", "Römer 12,10"],
+  ["Die Güte des HERRN ist's, daß wir nicht gar aus sind; seine Barmherzigkeit hat noch kein Ende, sondern sie ist alle Morgen neu.", "Klagelieder 3,22–23"],
+  ["Wohl dem, der den HERRN fürchtet und auf seinen Wegen geht! Du wirst dich nähren deiner Hände Arbeit; wohl dir, du hast es gut.", "Psalm 128,1–2"],
+  ["Kommet her zu mir alle, die ihr mühselig und beladen seid; ich will euch erquicken.", "Matthäus 11,28"],
+  ["Und der HERR, unser Gott, sei uns freundlich und fördere das Werk unsrer Hände bei uns; ja, das Werk unsrer Hände wolle er fördern!", "Psalm 90,17"],
+  ["Ehre Vater und Mutter, das ist das erste Gebot, das Verheißung hat.", "Epheser 6,2"],
+];
+function verseOfDay(){ const d = new Date(); const n = Math.floor((d - new Date(d.getFullYear(),0,0)) / 864e5) + d.getFullYear(); return VERSE[n % VERSE.length]; }
+const verseHtml = () => { const [t, r] = verseOfDay(); return `<div class="verse">${ICON.book}<div><q>${esc(t)}</q><cite>${esc(r)} · Lutherbibel 1912</cite></div></div>`; };
+
+// ---------- Mama spricht Aufgaben ein ----------
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null;
+function voiceSheet(){
+  if (!S.settings.geminiKey){ toast("Bitte zuerst unter Einstellungen den KI-Schlüssel eintragen."); return; }
+  openSheet(`<h2>Aufgaben einsprechen</h2>
+    <p class="hint">Sag einfach, was zu tun ist, z. B.: „Daniel soll heute den Keller aufräumen, Esther hilft mir beim Kochen und jemand muss die Blumen gießen.“ Die KI macht daraus Aufgaben und verteilt sie.</p>
+    ${SR ? `<button type="button" class="mic-btn" id="micBtn" aria-label="Aufnahme starten">${ICON.mic}</button><p class="hint" id="micHint" style="text-align:center">Antippen und sprechen</p>` : `<p class="hint">Tipp: Tippe ins Textfeld und nutze die Mikrofon-Taste der Tastatur.</p>`}
+    <div class="field"><label for="voiceText">Das hast du gesagt</label><textarea id="voiceText" placeholder="Hier erscheint der Text. Du kannst ihn auch tippen oder korrigieren."></textarea></div>
+    <p class="err" id="voiceErr" hidden></p>
+    <div class="sheet-actions"><div class="right"><button type="button" class="btn ghost" id="cancel">Abbrechen</button><button class="btn" type="submit" id="voiceGo">${ICON.spark}Verteilen</button></div></div>`, s => {
+    const ta = s.querySelector("#voiceText"), mb = s.querySelector("#micBtn"), hint = s.querySelector("#micHint");
+    const stop = () => { try { rec && rec.stop(); } catch(_){} rec = null; if (mb){ mb.classList.remove("on"); hint.textContent = "Antippen und sprechen"; } };
+    s.querySelector("#cancel").onclick = () => { stop(); closeSheet(); };
+    if (mb) mb.onclick = () => {
+      if (rec){ stop(); return; }
+      rec = new SR(); rec.lang = "de-DE"; rec.continuous = true; rec.interimResults = true;
+      const startText = ta.value ? ta.value.trim() + " " : "";
+      rec.onresult = e => { let t = ""; for (let i = 0; i < e.results.length; i++) t += e.results[i][0].transcript; ta.value = startText + t; };
+      rec.onerror = e => { stop(); if (e.error === "not-allowed") toast("Bitte das Mikrofon erlauben."); };
+      rec.onend = () => { if (rec) stop(); };
+      try { rec.start(); mb.classList.add("on"); hint.textContent = "Ich höre zu … zum Beenden nochmal tippen"; } catch(_){ stop(); }
+    };
+    s.onsubmit = async e => {
+      e.preventDefault(); stop();
+      const text = ta.value.trim(), err = s.querySelector("#voiceErr");
+      if (!text){ err.textContent = "Bitte zuerst etwas sagen oder schreiben."; err.hidden = false; return; }
+      const go = s.querySelector("#voiceGo"); go.disabled = true; go.innerHTML = `${ICON.spark}KI denkt nach …`;
+      try { const items = await voiceToTasks(text); if (!items.length) throw new Error("Die KI hat darin keine Aufgabe erkannt."); voicePreview(items); }
+      catch(ex){ err.textContent = ex.message || "Das hat nicht geklappt."; err.hidden = false; go.disabled = false; go.innerHTML = `${ICON.spark}Verteilen`; }
+    };
+  });
+}
+async function voiceToTasks(text){
+  const ppl = members().map(m => ({ id: m.id, name: m.name, rolle: ROLLEN[rolleOf(m)], alter: m.alter ? Number(m.alter) : null, beschreibung: m.beschreibung || "", heute_schon_minuten: tasksFor(m.id).reduce((s,a) => s + (Number(a.minuten)||0), 0) }));
+  const out = await gemini(`Die Mutter einer Familie hat per Sprache gesagt, welche Aufgaben anstehen. Mache daraus einzelne Aufgaben und verteile sie. Antworte NUR mit JSON.
+
+Heute ist ${WT[new Date().getDay()]}, ${today()}.
+Gesagter Text: «${text}»
+
+Personen: ${JSON.stringify(ppl)}
+
+Regeln:
+- Nennt sie eine Person (auch Spitznamen oder "die Kinder"/"alle"), nimm genau diese. Sonst wähle passend zu Alter, Beschreibung und der heutigen Belastung (heute_schon_minuten). Kleine Kinder nur einfache, sichere Aufgaben.
+- "wann": "heute", "morgen" oder ein Datum YYYY-MM-DD. Standard "heute".
+- "wiederholung": "einmal", außer sie sagt ausdrücklich "jeden Tag" ("taeglich") oder bestimmte Wochentage ("woechentlich" mit "tage" als Zahlen 0=So bis 6=Sa).
+- "minuten": realistische Schätzung. "kategorie": eine von ${Object.keys(CATS).join(", ")}.
+- "beschreibung": was genau zu tun ist, in 1–2 kurzen Sätzen, aus dem Gesagten. "grund": kurzer Satz, warum diese Person.
+- Titel kurz, z. B. "Keller aufräumen". Nutze nur die angegebenen Personen-ids.
+
+Format: {"aufgaben":[{"titel":"","beschreibung":"","minuten":10,"kategorie":"","wer":["id"],"grund":"","wann":"heute","wiederholung":"einmal","tage":[]}]}`);
+  const valid = new Set(Object.keys(S.mitglieder));
+  return (out.aufgaben || []).map(x => {
+    let datum = today(); if (x.wann === "morgen") datum = ymd(addDays(new Date(), 1)); else if (/^\d{4}-\d{2}-\d{2}$/.test(x.wann||"")) datum = x.wann;
+    const wh = ["einmal","taeglich","woechentlich"].includes(x.wiederholung) ? x.wiederholung : "einmal";
+    return { titel: String(x.titel||"").slice(0, 80), beschreibung: String(x.beschreibung||"").slice(0, 400), minuten: Math.max(0, Math.min(240, Number(x.minuten)||10)),
+      kategorie: CATS[x.kategorie] ? x.kategorie : "sonstiges", wer: [...new Set(arr(x.wer).filter(id => valid.has(id)))], grund: String(x.grund||"").slice(0, 140),
+      wiederholung: wh, tage: wh === "woechentlich" ? arr(x.tage).map(Number).filter(n => n >= 0 && n <= 6) : [], datum: wh === "einmal" ? datum : "" };
+  }).filter(x => x.titel);
+}
+function voicePreview(items){
+  const card = (x, i) => `<div class="voice-item"><div class="top"><span class="ticon" style="background:var(--surface)">${catIcon(x.kategorie)}</span><div class="main"><b>${esc(x.titel)}</b>
+      <div class="meta"><span>${ICON.clock}${minTxt(x.minuten)}</span><span>${x.wiederholung === "einmal" ? (x.datum === today() ? "heute" : `am ${parseYmd(x.datum).getDate()}. ${MON[parseYmd(x.datum).getMonth()]}`) : repeatTxt(x)}</span></div></div>
+      <button type="button" class="icon-btn" data-drop="${i}" aria-label="Weglassen">${SV('<path d="M6 6l12 12M18 6L6 18"/>')}</button></div>
+    ${x.beschreibung ? `<div class="hint">${esc(x.beschreibung)}</div>` : ""}
+    <div class="picker">${members().map(m => `<button type="button" class="pick" data-pi="${i}" data-v="${m.id}" aria-pressed="${x.wer.includes(m.id)}">${avatar(m, 40)}<span class="nm">${esc(m.name)}</span></button>`).join("")}</div>
+    ${x.grund ? `<div class="reason">${ICON.spark}<span>${esc(x.grund)}</span></div>` : ""}</div>`;
+  openSheet(`<h2>Das hat die KI verstanden</h2><p class="hint">Tippe auf die Fotos, um die Verteilung zu ändern. Mit „Losschicken“ erscheinen die Aufgaben sofort bei den Personen und in der Küche.</p>
+    <div id="vitems" style="display:flex;flex-direction:column;gap:10px">${items.map(card).join("")}</div>
+    <p class="err" id="vErr" hidden></p>
+    <div class="sheet-actions"><button type="button" class="btn ghost" id="again">Nochmal sprechen</button><div class="right"><button type="button" class="btn ghost" id="cancel">Abbrechen</button><button class="btn" type="submit">${ICON.check.replace('stroke-width="3"','stroke="currentColor" stroke-width="3" width="20" height="20"')}Losschicken</button></div></div>`, s => {
+    s.querySelector("#cancel").onclick = closeSheet;
+    s.querySelector("#again").onclick = voiceSheet;
+    s.querySelector("#vitems").onclick = e => {
+      const p = e.target.closest("[data-pi]");
+      if (p){ const x = items[+p.dataset.pi], v = p.dataset.v; x.wer = x.wer.includes(v) ? x.wer.filter(w => w !== v) : [...x.wer, v]; p.setAttribute("aria-pressed", x.wer.includes(v)); return; }
+      const d = e.target.closest("[data-drop]"); if (d){ items[+d.dataset.drop] = null; d.closest(".voice-item").remove(); }
+    };
+    s.onsubmit = async e => {
+      e.preventDefault();
+      const list = items.filter(Boolean);
+      if (!list.length){ closeSheet(); return; }
+      if (list.some(x => !x.wer.length)){ const er = s.querySelector("#vErr"); er.textContent = "Bitte bei jeder Aufgabe mindestens eine Person wählen."; er.hidden = false; return; }
+      const u = {}, by = {};
+      for (const x of list){
+        const { grund, ...t } = x;
+        u[`aufgaben/${uid()}`] = { ...t, modus: "fest", jeder: false, erinnerung: x.wiederholung === "einmal" ? "" : "18:00", erstellt: Date.now(), vonStimme: true };
+        for (const id of x.wer) (by[id] ||= []).push(x.titel);
+      }
+      await write(u); closeSheet(); toast(list.length === 1 ? "Aufgabe verteilt" : `${list.length} Aufgaben verteilt`);
+      for (const [id, t] of Object.entries(by)) push(`Neue Aufgabe für ${member(id)?.name}`, t.map(x => "„" + x + "“").join(", "), "clipboard");
+    };
+  });
+}
+
 function planLine(){
   const st = day().planStatus;
   if (planBusy) return `<div class="planinfo">${ICON.spark}Die KI verteilt gerade die Aufgaben …</div>`;
@@ -604,16 +754,34 @@ function planLine(){
   return "";
 }
 function viewHeute(){
-  if (!tasks().length) return `<div class="section">${empty("Noch keine Hausarbeiten", isAdmin() ? "Lege unter <b>Aufgaben</b> die Hausarbeiten an." : "Sobald Mama Aufgaben anlegt, erscheinen sie hier.")}</div>`;
+  return isAdmin() ? viewHeuteAdmin() : viewHeuteMein();
+}
+function viewHeuteAdmin(){
+  let h = `<div class="section">${verseHtml()}</div>`;
+  h += `<div class="section"><div class="card" style="display:flex;gap:14px;align-items:center;flex-wrap:wrap"><button class="btn" id="openVoice" style="min-height:56px;font-size:17px">${ICON.mic}Aufgaben einsprechen</button>
+    <p class="hint" style="flex:1;min-width:180px">Einfach sagen, was zu tun ist. Die KI verteilt es und schickt es los.</p></div></div>`;
+  if (!tasks().length) return h + `<div class="section">${empty("Noch keine Hausarbeiten", "Lege unter <b>Aufgaben</b> die Hausarbeiten an.")}</div>`;
   const { u, bar, legend } = progressHtml();
-  let h = "";
-  const late = me() ? tasksFor(meId).filter(a => isLate(a, meId)) : [];
-  if (late.length) h += `<div class="section"><div class="remind" role="alert">${ICON.bell}<div><b>${esc(me().name)}, noch ${late.length === 1 ? "eine Aufgabe" : late.length + " Aufgaben"} offen:</b> ${late.map(a => esc(a.titel)).join(", ")}</div></div></div>`;
   h += `<div class="section"><div class="hero"><div><div class="eyebrow">Familie heute</div><div class="big">${u.done} <small>von ${u.all} erledigt</small></div></div>
     <div class="barbox"><div class="bar" role="img" aria-label="${u.done} von ${u.all} erledigt">${bar}</div><div class="legend-row">${legend}</div></div>
     <button class="btn ghost small" id="openKitchen">${ICON.kitchen}Küchen-Ansicht</button></div>${planLine()}</div>`;
   h += `<div class="section">${boardHtml("phone")}</div>`;
-  if (!isAdmin() && !opt("handyAbhaken")) h += `<p class="hint" style="margin-top:10px">Abhaken geht nur am Küchen-iPad – so hat Mama es eingestellt.</p>`;
+  return h;
+}
+function viewHeuteMein(){
+  const mine = tasksFor(meId).sort((a,b) => (!!doneBy(a,meId) - !!doneBy(b,meId)) || (a.erinnerung||"99").localeCompare(b.erinnerung||"99"));
+  const dn = mine.filter(a => doneBy(a, meId)).length;
+  const openMin = mine.filter(a => !doneBy(a, meId)).reduce((s,a) => s + (Number(a.minuten)||0), 0);
+  let h = "";
+  const late = mine.filter(a => isLate(a, meId));
+  if (late.length) h += `<div class="section"><div class="remind" role="alert">${ICON.bell}<div><b>${esc(me().name)}, noch ${late.length === 1 ? "eine Aufgabe" : late.length + " Aufgaben"} offen:</b> ${late.map(a => esc(a.titel)).join(", ")}. Bitte heute noch fertig machen.</div></div></div>`;
+  h += `<div class="section"><div class="hero"><div><div class="eyebrow">Deine Aufgaben heute</div><div class="big">${dn} <small>von ${mine.length} erledigt</small></div></div>
+    <div class="barbox"><div class="bar"><i style="--c:${me().farbe};flex-grow:${dn}"></i><i style="--c:transparent;flex-grow:${mine.length - dn}"></i></div>
+    <div class="legend-row"><span>${mine.length && dn === mine.length ? "Alles geschafft, super!" : openMin ? `noch ${minTxt(openMin)}` : ""}</span></div></div></div></div>`;
+  h += `<div class="section">` + (mine.length ? `<div class="mine-list">${mine.map(a => chip(a, meId, "phone")).join("")}</div>` : empty("Heute nichts für dich eingeteilt", "Schau unten, ob du etwas übernehmen kannst.")) + `</div>`;
+  if (!opt("handyAbhaken")) h += `<p class="hint" style="margin-top:10px">Abhaken geht nur am Küchen-iPad, so hat Mama es eingestellt.</p>`;
+  const free = freeTasks().filter(a => a.wiederholung !== "einmal");
+  if (free.length) h += `<div class="section"><div class="section-head"><h2>Noch frei – magst du helfen?</h2></div><div class="chips">${free.map(a => freeChip(a, "phone")).join("")}</div></div>`;
   return h;
 }
 function viewAufgaben(){
@@ -624,6 +792,7 @@ function viewAufgaben(){
       <button class="btn" id="runAI" ${planBusy || !S.settings.geminiKey ? "disabled" : ""}>${ICON.spark}${planBusy ? "Verteilt …" : "Heute neu verteilen"}</button></div>${planLine()}</div>`;
   } else h += `<p class="hint" style="margin-top:14px">Nur ${esc(admins().map(a=>a.name).join(" oder ") || "Mama")} kann Aufgaben ändern. Tippe auf <b>i</b>, um die Beschreibung zu sehen.</p>`;
   const all = tasks();
+  if (all.length) h += `<div class="section"><div class="section-head"><h2>Heute bei allen</h2></div>${boardHtml("phone")}</div><div class="section"><h2 style="margin-top:8px">Alle Aufgaben</h2></div>`;
   if (!all.length) return h + `<div class="section">${empty("Noch keine Aufgaben", isAdmin() ? `Tippe auf <b>+</b> oder <button class="btn small" id="seedTasks" style="margin-top:10px">Typische Hausarbeiten anlegen</button>` : "")}</div>`;
   const groups = [["Jeden Tag", a => a.wiederholung === "taeglich"], ["Bestimmte Tage", a => a.wiederholung === "woechentlich"], ["Einmalig", a => a.wiederholung === "einmal" && !a.fertig]];
   for (const [label, f] of groups){
@@ -688,6 +857,7 @@ function renderKitchen(){
   $("#kitchen").innerHTML = `<div class="k-top"><div class="k-clock">${pad(d.getHours())}:${pad(d.getMinutes())}</div>
       <div class="k-date">${WT[d.getDay()]}<small>${d.getDate()}. ${MONL[d.getMonth()]}</small></div>
       <div class="k-prog"><div class="lbl"><span>Familie heute</span><span>${u.done} von ${u.all} erledigt</span></div><div class="bar">${bar}</div></div></div>
+    ${(() => { const [t, r] = verseOfDay(); return `<div class="k-verse"><q>${esc(t)}</q><cite>${esc(r)}</cite></div>`; })()}
     ${boardHtml("kitchen")}
     <div class="k-foot"><span>${opt("kuecheAbhaken") ? "Antippen = erledigt. Nochmal tippen = rückgängig. „i“ = genaue Beschreibung." : "Abhaken ist hier ausgeschaltet."}${S.online ? "" : " · Keine Internetverbindung!"}</span>
       <button class="btn ghost small" id="exitKitchen">${ICON.lock}Beenden</button></div>`;
@@ -962,6 +1132,7 @@ document.addEventListener("click", e => {
   if ((b = q("[data-me]"))) return chooseMe(b.dataset.me);
   if (q("#fab")) return taskForm();
   if (q("#runAI")) return makePlan(today(), true);
+  if (q("#openVoice")) return voiceSheet();
   if (q("#seedTasks")) { write(seedTaskUpdates()); toast("Hausarbeiten angelegt"); return; }
   if (q("#openKitchen") || q("#startKitchen") || q("#whoKitchen")) return enterKitchen();
   if (q("#exitKitchen")) return exitKitchen();
