@@ -1,0 +1,1015 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Familienplaner</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Familienplaner">
+<meta name="theme-color" content="#1D6B70">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="icon" href="icon.png">
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+/* Familienplaner – eigenständige Version.
+   Layout: Persönlich = Reiter unten. Küche = kompakte Tafel: eine Zeile pro Person (Foto links, Aufgaben-Kärtchen daneben, umbrechend), alles auf einem Bildschirm. */
+:root{
+  --bg:#EEF2F1; --surface:#FFFFFF; --sunk:#E4EAE8; --line:#CDD8D5;
+  --fg:#18292A; --muted:#566B6C;
+  --accent:#1D6B70; --accent-fg:#FFFFFF; --accent-soft:#D3E8E8;
+  --warm:#E9A23B; --warm-soft:#FBEBD2; --warm-fg:#5A3A06;
+  --ok:#2E8A5A; --ok-soft:#D6EEDF;
+  --danger:#B23A3A;
+  --shadow:0 1px 2px rgba(20,50,50,.08),0 4px 14px rgba(20,50,50,.06);
+  --f-display:"Bricolage Grotesque",ui-rounded,system-ui,sans-serif;
+  --f-body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --r:14px;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0F1A1B; --surface:#172526; --sunk:#1F3133; --line:#2B4244;
+  --fg:#E6EFEE; --muted:#9AB0B0;
+  --accent:#5BB8BD; --accent-fg:#06282A; --accent-soft:#1D3D3F;
+  --warm:#F0B457; --warm-soft:#3A2C14; --warm-fg:#FBE3BC;
+  --ok:#5CC48C; --ok-soft:#183A28;
+  --danger:#E27A7A; --shadow:0 1px 2px rgba(0,0,0,.4);
+  color-scheme:dark}}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:17px;line-height:1.45;-webkit-tap-highlight-color:transparent;padding-top:env(safe-area-inset-top,0px)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+img{max-width:100%}
+[hidden]{display:none!important}
+.wrap{max-width:1100px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 120px}
+header.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:4px}
+.eyebrow{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700}
+h1{font-family:var(--f-display);font-weight:700;font-size:clamp(26px,5vw,36px);line-height:1.05;margin:4px 0 0}
+h2{font-family:var(--f-display);font-weight:600;font-size:20px;margin:0}
+.section{display:flex;flex-direction:column;gap:10px;margin-top:24px}
+.section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.count{color:var(--muted);font-size:15px;font-variant-numeric:tabular-nums}
+.hint{color:var(--muted);font-size:14.5px;margin:0}
+.err{color:var(--danger);font-size:14.5px;margin:0}
+.head-actions{display:flex;align-items:center;gap:8px}
+
+.av{--s:40px;width:var(--s);height:var(--s);border-radius:50%;flex:none;display:grid;place-items:center;overflow:hidden;background:var(--c,var(--muted));color:#fff;font-weight:700;font-family:var(--f-display);font-size:calc(var(--s)*.42);line-height:1}
+.av img{width:100%;height:100%;object-fit:cover}
+.av.free{background:var(--sunk);color:var(--muted);border:2px dashed var(--line)}
+.av.free svg{width:55%;height:55%}
+.stack{display:inline-flex}
+.stack .av{border:2px solid var(--surface)}
+.stack .av+.av{margin-left:-8px}
+.me-btn{display:flex;align-items:center;gap:8px;border:0;background:var(--surface);border-radius:999px;padding:4px 12px 4px 4px;box-shadow:var(--shadow);font-weight:700;min-height:46px}
+
+.btn{min-height:46px;padding:0 18px;border-radius:12px;border:0;background:var(--accent);color:var(--accent-fg);font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap;text-decoration:none}
+.btn.small{min-height:38px;padding:0 13px;font-size:15px}
+.btn.ghost{background:var(--sunk);color:var(--fg)}
+.btn.danger{background:transparent;color:var(--danger);padding:0 8px}
+.btn svg{width:20px;height:20px}
+.btn:disabled{opacity:.55;cursor:default}
+.icon-btn{width:42px;height:42px;flex:none;border-radius:10px;border:0;background:transparent;color:var(--muted);display:grid;place-items:center}
+.icon-btn:hover{background:var(--sunk);color:var(--fg)}
+.icon-btn svg{width:20px;height:20px}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.pill{font-size:12.5px;font-weight:700;padding:2px 9px;border-radius:999px;background:var(--sunk);color:var(--muted);white-space:nowrap;display:inline-flex;align-items:center;gap:4px}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}
+.pill.warn{background:var(--warm-soft);color:var(--warm-fg)}
+.pill.acc{background:var(--accent-soft);color:var(--accent)}
+.meta{display:flex;flex-wrap:wrap;gap:4px 12px;color:var(--muted);font-size:14.5px;align-items:center}
+.meta span{display:inline-flex;align-items:center;gap:5px}
+.meta svg{width:15px;height:15px}
+.ticon{width:40px;height:40px;flex:none;border-radius:11px;display:grid;place-items:center;background:var(--sunk);color:var(--accent)}
+.ticon svg{width:22px;height:22px}
+.empty{padding:22px 16px;text-align:center;color:var(--muted);background:var(--surface);border-radius:var(--r);border:1.5px dashed var(--line)}
+.empty b{color:var(--fg)}
+.card{background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow);padding:14px 16px}
+
+/* ===== Tafel (Küche und "Heute") ===== */
+.board{display:flex;flex-direction:column;gap:10px}
+.row{display:grid;grid-template-columns:150px 1fr;gap:12px;align-items:start;background:var(--surface);border-radius:18px;box-shadow:var(--shadow);padding:10px 12px;border-left:6px solid var(--c)}
+.row.free{border-left-color:var(--line);background:transparent;box-shadow:none;border:2px dashed var(--line)}
+.row.allok{background:linear-gradient(90deg,var(--ok-soft),var(--surface) 60%)}
+.who{display:flex;align-items:center;gap:10px;min-width:0;padding-top:2px}
+.who .av{--s:52px}
+.who .nm{font-family:var(--f-display);font-weight:700;font-size:20px;line-height:1.05;overflow-wrap:anywhere}
+.who .sub{color:var(--muted);font-weight:700;font-size:13.5px;font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:4px}
+.who .sub svg{width:16px;height:16px;color:var(--ok)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;min-width:0}
+.chip{position:relative;display:flex;align-items:center;gap:8px;background:var(--sunk);border-radius:14px;min-height:54px;padding:6px 6px 6px 8px;flex:1 1 200px;max-width:280px;min-width:0}
+.chip .tap{all:unset;display:flex;align-items:center;gap:9px;flex:1;min-width:0;cursor:pointer;min-height:42px}
+.chip .tap:focus-visible{outline:3px solid var(--accent);outline-offset:3px;border-radius:10px}
+.chip .ti{width:34px;height:34px;flex:none;border-radius:10px;background:var(--surface);display:grid;place-items:center;color:var(--accent)}
+.chip .ti svg{width:20px;height:20px}
+.chip .t{flex:1;min-width:0;font-weight:700;font-size:15.5px;line-height:1.2;overflow-wrap:anywhere}
+.chip .t small{display:block;font-size:12.5px;color:var(--muted);font-weight:700;margin-top:1px}
+.chip .ck{width:34px;height:34px;flex:none;border-radius:50%;border:3px solid var(--line);background:var(--surface);display:grid;place-items:center}
+.chip .ck svg{width:18px;height:18px;stroke:#fff;opacity:0}
+.chip .info{width:30px;height:30px;flex:none;border-radius:50%;border:0;background:transparent;color:var(--muted);display:grid;place-items:center;font-family:Georgia,serif;font-weight:700;font-style:italic;font-size:17px}
+.chip .info:hover{background:var(--surface);color:var(--accent)}
+.chip.done{background:var(--ok-soft)}
+.chip.done .t{color:var(--muted);text-decoration:line-through;text-decoration-thickness:2px}
+.chip.done .ck{background:var(--ok);border-color:var(--ok)}
+.chip.done .ck svg{opacity:1}
+.chip.late{background:var(--warm-soft);box-shadow:inset 4px 0 0 var(--warm)}
+.chip.late .t small{color:var(--warm-fg)}
+.chip.mine{outline:2px solid var(--accent);outline-offset:-2px}
+.chip.locked .tap{cursor:default}
+.chip.freechip .ck{border-style:dashed}
+.chip.freechip .ck svg{stroke:var(--muted);opacity:1}
+@keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.05)}100%{transform:scale(1)}}
+.chip.just{animation:pop .35s ease-out}
+@media (max-width:620px){.row{grid-template-columns:1fr}.chip{max-width:none}}
+
+.hero{background:var(--surface);border-radius:18px;box-shadow:var(--shadow);padding:14px 16px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.hero .big{font-family:var(--f-display);font-weight:700;font-size:30px;line-height:1;font-variant-numeric:tabular-nums}
+.hero .big small{font-size:15px;color:var(--muted);font-weight:600}
+.hero .barbox{flex:1;min-width:200px;display:flex;flex-direction:column;gap:6px}
+.bar{display:flex;height:14px;border-radius:999px;background:var(--sunk);overflow:hidden;gap:2px}
+.bar i{display:block;height:100%;background:var(--c)}
+.legend-row{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13.5px;color:var(--muted)}
+.legend-row span{display:inline-flex;align-items:center;gap:5px}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--c,var(--muted));flex:none;display:inline-block}
+.remind{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:var(--r);background:var(--warm-soft);color:var(--warm-fg);border-left:6px solid var(--warm)}
+.remind svg{width:24px;height:24px;flex:none}
+.planinfo{display:flex;align-items:center;gap:10px;font-size:14.5px;color:var(--muted)}
+.planinfo svg{width:18px;height:18px;color:var(--accent);flex:none}
+
+/* Küchen-Modus */
+body.kitchen nav.tabs, body.kitchen .fab, body.kitchen #app{display:none}
+#kitchen{padding-block:14px 20px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:12px;max-width:1400px;margin:0 auto}
+.k-top{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.k-clock{font-family:var(--f-display);font-weight:800;font-size:46px;line-height:.9;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.k-date{font-weight:700;font-size:18px;line-height:1.15}
+.k-date small{display:block;color:var(--muted);font-size:14px}
+.k-prog{flex:1;min-width:220px;display:flex;flex-direction:column;gap:6px}
+.k-prog .lbl{display:flex;justify-content:space-between;font-weight:700;gap:10px}
+.k-foot{display:flex;justify-content:space-between;align-items:center;gap:12px;color:var(--muted);font-size:13.5px;flex-wrap:wrap}
+
+/* Listen / Einstellungen */
+.list{display:flex;flex-direction:column;gap:8px}
+.item{display:flex;align-items:center;gap:12px;background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow);padding:10px 12px}
+.item .main{flex:1;min-width:0}
+.item .title{font-weight:700;overflow-wrap:anywhere}
+.setting{display:flex;align-items:center;gap:14px;background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow);padding:14px 16px}
+.setting .main{flex:1;min-width:0}
+.setting .title{font-weight:700}
+.setting.col{flex-direction:column;align-items:stretch}
+.switch{position:relative;width:56px;height:32px;flex:none;border-radius:999px;border:0;background:var(--line);transition:background .15s}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .15s}
+.switch[aria-checked="true"]{background:var(--ok)}
+.switch[aria-checked="true"]::after{transform:translateX(24px)}
+.code{font-family:ui-monospace,Menlo,monospace;background:var(--sunk);border-radius:8px;padding:8px 10px;font-size:14px;overflow-wrap:anywhere;user-select:all}
+.people{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.person{background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow);padding:16px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}
+.person .av{--s:80px}
+.person .n{font-weight:700;font-size:18px}
+.person .desc{font-size:14px;color:var(--muted)}
+.stats{display:flex;gap:16px;color:var(--muted);font-size:14px;font-variant-numeric:tabular-nums}
+.stats b{display:block;color:var(--fg);font-size:20px;font-family:var(--f-display)}
+
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:5;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
+nav.tabs .in{max-width:1100px;margin:0 auto;display:grid;grid-auto-flow:column;grid-auto-columns:1fr}
+nav.tabs button{border:0;background:none;min-height:62px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--muted);font-weight:700;font-size:13px}
+nav.tabs button svg{width:24px;height:24px}
+nav.tabs button[aria-selected="true"]{color:var(--accent)}
+.fab{position:fixed;right:calc(18px + env(safe-area-inset-right,0px));bottom:calc(80px + env(safe-area-inset-bottom,0px));z-index:6;width:60px;height:60px;border-radius:50%;border:0;background:var(--accent);color:var(--accent-fg);box-shadow:0 6px 20px rgba(20,60,60,.3);display:grid;place-items:center}
+.fab svg{width:28px;height:28px}
+
+.sheet-bg{position:fixed;inset:0;z-index:20;background:rgba(10,25,25,.45);display:flex;align-items:flex-end;justify-content:center}
+@media (min-width:700px){.sheet-bg{align-items:center}}
+.sheet{width:100%;max-width:600px;max-height:92%;overflow:auto;background:var(--surface);border-radius:20px 20px 0 0;padding:20px max(20px,env(safe-area-inset-left,0px)) calc(20px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:14px}
+@media (min-width:700px){.sheet{border-radius:20px}}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label,.legend{font-weight:700;font-size:15px}
+.field input,.field select,.field textarea{min-height:46px;padding:10px 12px;border-radius:10px;border:1.5px solid var(--line);background:var(--bg);width:100%}
+.field textarea{min-height:90px;resize:vertical}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.seg{display:flex;flex-wrap:wrap;gap:8px}
+.seg button{min-height:42px;padding:0 13px;border-radius:10px;border:1.5px solid var(--line);background:var(--bg);font-weight:700;font-size:15px;display:inline-flex;align-items:center;gap:6px}
+.seg button svg{width:20px;height:20px}
+.seg button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.picker{display:flex;flex-wrap:wrap;gap:8px}
+.pick{border:0;background:none;padding:0;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:12.5px;font-weight:700;color:var(--muted);width:60px}
+.pick .av{--s:48px;outline:3px solid transparent;outline-offset:2px}
+.pick[aria-pressed="true"] .av{outline-color:var(--accent)}
+.pick[aria-pressed="true"]{color:var(--fg)}
+.pick .nm{max-width:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bigpick{display:flex;flex-wrap:wrap;gap:16px;justify-content:center}
+.bigpick button{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:8px;font-weight:700;font-size:17px;width:100px}
+.bigpick .av{--s:84px;box-shadow:var(--shadow)}
+.sheet-actions{display:flex;gap:10px;justify-content:space-between;align-items:center;flex-wrap:wrap;margin-top:4px}
+.sheet-actions .right{display:flex;gap:10px;margin-left:auto}
+.desc-box{background:var(--sunk);border-radius:12px;padding:12px 14px;white-space:pre-wrap;overflow-wrap:anywhere}
+.reason{font-size:14px;color:var(--muted);background:var(--sunk);border-radius:10px;padding:8px 10px;display:flex;gap:8px}
+.reason svg{width:16px;height:16px;flex:none;margin-top:2px;color:var(--accent)}
+.photo-edit{display:flex;align-items:center;gap:16px}
+.photo-edit .av{--s:80px}
+
+.fullscreen{position:fixed;inset:0;z-index:15;background:var(--bg);overflow:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:40px max(16px,env(safe-area-inset-right,0px)) 40px max(16px,env(safe-area-inset-left,0px));text-align:center}
+.who-grid{display:flex;flex-wrap:wrap;justify-content:center;gap:22px;max-width:760px}
+.who-grid button{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:10px;font-weight:700;font-size:18px;width:116px}
+.who-grid .av{--s:104px;box-shadow:var(--shadow)}
+.setup{width:min(420px,100%);display:flex;flex-direction:column;gap:12px;text-align:left}
+
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(140px + env(safe-area-inset-bottom,0px));z-index:30;background:var(--fg);color:var(--bg);padding:12px 20px;border-radius:999px;font-weight:700;font-size:16px;max-width:calc(100% - 32px);text-align:center}
+body.kitchen .toast{bottom:calc(30px + env(safe-area-inset-bottom,0px));font-size:19px}
+@media (max-width:480px){.grid2{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+  <header class="top">
+    <div><div class="eyebrow" id="dateline"></div><h1 id="pageTitle">Familienplaner</h1></div>
+    <div class="head-actions" id="headActions"></div>
+  </header>
+  <main id="view"><div class="section"><div class="empty">Wird geladen …</div></div></main>
+</div>
+<div id="kitchen" hidden></div>
+<button class="fab" id="fab" aria-label="Neue Aufgabe" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+<nav class="tabs" aria-label="Bereiche"><div class="in" role="tablist" id="tabbar"></div></nav>
+<div id="fullHost"></div>
+<div id="sheetHost"></div>
+<div id="toastHost"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js";
+import { getDatabase, ref, onValue, update, get, set as dbSet, runTransaction, query, orderByKey, startAt } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyA4Tr6YCYse1TVD-JDcBDPi3tuKv-13Bss",
+  authDomain: "familienplaner-c3472.firebaseapp.com",
+  databaseURL: "https://familienplaner-c3472-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "familienplaner-c3472",
+  storageBucket: "familienplaner-c3472.firebasestorage.app",
+  messagingSenderId: "114454540383",
+  appId: "1:114454540383:web:0ddda263ecf8cdd66eebea"
+};
+const fb = initializeApp(firebaseConfig);
+const db = getDatabase(fb);
+
+// ---------- Hilfen ----------
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pad = n => String(n).padStart(2, "0");
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const parseYmd = s => { const [y,m,d] = s.split("-").map(Number); return new Date(y, m-1, d); };
+const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate()+n); return x; };
+const WT = ["Sonntag","Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag"];
+const WTK = ["So","Mo","Di","Mi","Do","Fr","Sa"];
+const MON = ["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
+const MONL = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
+const COLORS = ["#C2457A","#2F7DC4","#2E9461","#D9822B","#7A5AC8","#A8952A","#3AA0A8","#8C6A4A"];
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const today = () => ymd(new Date());
+const nowHM = () => { const d = new Date(); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+const hm = t => { const d = new Date(t); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+const weekStart = () => { const d = new Date(); return ymd(addDays(d, -((d.getDay()+6)%7))); };
+const ls = { get(k,f){ try{ const v = localStorage.getItem(k); return v==null?f:JSON.parse(v);}catch{return f} }, set(k,v){ try{localStorage.setItem(k,JSON.stringify(v))}catch{} } };
+const minTxt = m => !m ? "" : m >= 60 ? `ca. ${Math.floor(m/60)} Std.${m%60?` ${m%60} Min.`:""}` : `ca. ${m} Min.`;
+const arr = v => Array.isArray(v) ? v.filter(x => x != null) : v && typeof v === "object" ? Object.values(v) : v ? [v] : [];
+
+const SV = (p, w=2) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+const ICON = {
+  check:'<svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+  edit: SV('<path d="M4 20h4L19 9l-4-4L4 16v4z"/>'),
+  bell: SV('<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15L6 16z"/><path d="M10 21h4"/>'),
+  clock: SV('<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>'),
+  hand: SV('<path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V11m0-1.5V4.5a1.5 1.5 0 0 1 3 0V11m0-4.5a1.5 1.5 0 0 1 3 0V13a7 7 0 0 1-7 7h-.5a6 6 0 0 1-5-2.7L3.6 14a1.5 1.5 0 0 1 2.4-1.8L8 14"/>'),
+  camera: SV('<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>'),
+  lock: SV('<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>'),
+  plus: SV('<path d="M12 5v14M5 12h14"/>', 2.5),
+  spark: SV('<path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/>'),
+  star: SV('<path d="M12 3.5l2.6 5.3 5.9.9-4.2 4.1 1 5.8L12 16.9 6.7 19.6l1-5.8-4.2-4.1 5.9-.9z"/>'),
+  kitchen: SV('<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M4 9h16M8 6h.01M11 6h.01M9 13v4"/>'),
+  copy: SV('<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>'),
+  gear: SV('<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>'),
+  home: SV('<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M9.5 15l2 2 3.5-3.5"/>'),
+  listI: SV('<path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1.5"/><circle cx="4.5" cy="12" r="1.5"/><circle cx="4.5" cy="18" r="1.5"/>'),
+  people: SV('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.5 3.3-5.5 6.5-5.5s5.9 2 6.5 5.5"/><circle cx="17.5" cy="9.5" r="2.5"/><path d="M17 14.6c2.4.2 4 1.8 4.5 4.4"/>'),
+};
+const CATS = {
+  kueche:{l:"Küche", p:'<circle cx="13" cy="12" r="6"/><path d="M3 4v6M5 4v6M3 7h2M4 10v10M21 4c-1.3 0-2 2-2 5s.7 3 2 3v8"/>'},
+  waesche:{l:"Wäsche", p:'<path d="M8 3L3 6l2 4 2-1v12h10V9l2 1 2-4-5-3c-.5 1.5-2 2.5-4 2.5S8.5 4.5 8 3z"/>'},
+  muell:{l:"Müll", p:'<path d="M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14M10 11v6M14 11v6"/>'},
+  putzen:{l:"Putzen", p:'<path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8z"/><path d="M18 15l.9 2.1L21 18l-2.1.9L18 21l-.9-2.1L15 18l2.1-.9z"/>'},
+  bad:{l:"Bad", p:'<path d="M4 12h16v3a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M6 12V5a2 2 0 0 1 4 0M7 20l-1 2M17 20l1 2"/>'},
+  aufraeumen:{l:"Aufräumen", p:'<path d="M3 8l9-5 9 5v9l-9 5-9-5z"/><path d="M3 8l9 5 9-5M12 13v9"/>'},
+  spielzeug:{l:"Spielsachen", p:'<rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/><rect x="8.5" y="5" width="7" height="7" rx="1"/>'},
+  schule:{l:"Schule", p:'<path d="M4 5h6a2 2 0 0 1 2 2v13a2 2 0 0 0-2-2H4z"/><path d="M20 5h-6a2 2 0 0 0-2 2v13a2 2 0 0 1 2-2h6z"/>'},
+  musik:{l:"Üben", p:'<path d="M9 18V5l11-2v13"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/>'},
+  einkauf:{l:"Einkauf", p:'<path d="M5 8h14l-1 13H6L5 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>'},
+  tiere:{l:"Haustiere", p:'<circle cx="6.5" cy="11" r="2"/><circle cx="17.5" cy="11" r="2"/><circle cx="9.5" cy="6" r="2"/><circle cx="14.5" cy="6" r="2"/><path d="M12 13c-3 0-5 3-5 5.5 0 1.5 2 2 5 1.5 3 .5 5 0 5-1.5 0-2.5-2-5.5-5-5.5z"/>'},
+  pflanzen:{l:"Pflanzen", p:'<path d="M6 14h12l-1.5 7h-9z"/><path d="M12 14V9M12 9c0-3 2-5 6-5 0 4-2 5-6 5zM12 11c0-2-1.5-4-5-4 0 3 1.5 4 5 4z"/>'},
+  sonstiges:{l:"Sonstiges", p:'<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>'},
+};
+const catIcon = k => SV((CATS[k]||CATS.sonstiges).p);
+
+// ---------- Familien-Code & Gerät ----------
+(function readHash(){ const m = location.hash.match(/^#([a-z0-9]{6,40})$/i); if (m){ ls.set("fp_code", m[1].toLowerCase()); history.replaceState(null, "", location.pathname + location.search); } })();
+let CODE = ls.get("fp_code", "");
+const DEVICE = ls.get("fp_device", "") || (() => { const d = uid(); ls.set("fp_device", d); return d; })();
+const base = () => `fam/${CODE}`;
+const newCode = () => { const a = "abcdefghjkmnpqrstuvwxyz23456789"; let s = ""; const r = crypto.getRandomValues(new Uint8Array(14)); for (const x of r) s += a[x % a.length]; return s; };
+
+// ---------- Zustand ----------
+const S = { mitglieder:{}, aufgaben:{}, tage:{}, settings:{}, loaded:false, online:true };
+const DEF = { kuecheAbhaken:true, kuecheUebernehmen:true, handyAbhaken:true, pushErledigt:true, pushPlan:true, pushErinnerung:true, kiAuto:true, kiUhrzeit:"06:00" };
+const opt = k => S.settings[k] === undefined ? DEF[k] : S.settings[k];
+let unsub = [];
+function connect(){
+  unsub.forEach(f => f()); unsub = [];
+  if (!CODE){ S.loaded = true; render(); return; }
+  const need = new Set(["mitglieder","aufgaben","tage","settings"]);
+  const got = n => { need.delete(n); if (!need.size && !S.loaded){ S.loaded = true; afterLoad(); } render(); };
+  unsub.push(onValue(ref(db, `${base()}/mitglieder`), s => { S.mitglieder = s.val() || {}; got("mitglieder"); }, e => showDbError(e)));
+  unsub.push(onValue(ref(db, `${base()}/aufgaben`), s => { S.aufgaben = s.val() || {}; got("aufgaben"); }, e => showDbError(e)));
+  unsub.push(onValue(query(ref(db, `${base()}/tage`), orderByKey(), startAt(ymd(addDays(new Date(), -8)))), s => { S.tage = s.val() || {}; got("tage"); }, e => showDbError(e)));
+  unsub.push(onValue(ref(db, `${base()}/settings`), s => { S.settings = s.val() || {}; got("settings"); }, e => showDbError(e)));
+  unsub.push(onValue(ref(db, ".info/connected"), s => { S.online = !!s.val(); }));
+}
+function showDbError(e){ console.error(e); toast("Keine Verbindung zur Datenbank. Bitte Internet prüfen."); }
+async function write(updates){ try { await update(ref(db, base()), updates); } catch(e){ console.error(e); toast("Konnte nicht speichern. Bitte nochmal versuchen."); } }
+
+// ---------- Personen ----------
+const ROLLEN = { admin:"Admin", erwachsen:"Erwachsen", kind:"Kind" };
+const rolleOf = m => m.rolle || "kind";
+const members = () => Object.entries(S.mitglieder).map(([id,v]) => ({id, ...v})).sort((a,b) => (a.reihe||0)-(b.reihe||0) || (a.name||"").localeCompare(b.name||""));
+const kids = () => members().filter(m => rolleOf(m) === "kind");
+const member = id => S.mitglieder[id] ? { id, ...S.mitglieder[id] } : null;
+const admins = () => members().filter(m => m.rolle === "admin");
+let meId = ls.get("fp_me", "");
+let kitchenMode = ls.get("fp_kitchen", false);
+const me = () => member(meId);
+const isAdmin = () => me()?.rolle === "admin";
+function avatar(m, size){
+  const sz = size ? `--s:${size}px;` : "";
+  if (!m) return `<span class="av free" style="${sz}">${SV('<path d="M12 5v14M5 12h14"/>')}</span>`;
+  return `<span class="av" style="--c:${m.farbe||'#888'};${sz}">${m.foto ? `<img src="${esc(m.foto)}" alt="">` : esc((m.name||"?").trim().charAt(0).toUpperCase())}</span>`;
+}
+const stack = (ids, size=24) => `<span class="stack">${ids.map(id => avatar(member(id), size)).join("")}</span>`;
+const namesOf = ids => ids.map(id => member(id)?.name).filter(Boolean).join(", ");
+
+// ---------- Aufgaben-Logik ----------
+const tasks = () => Object.entries(S.aufgaben).map(([id,v]) => ({id, ...v}));
+const task = id => S.aufgaben[id] ? { id, ...S.aufgaben[id] } : null;
+const modus = a => a.modus || "ki";
+const day = (d = today()) => S.tage[d] || {};
+const fixedWer = a => arr(a.wer).filter(id => S.mitglieder[id]);
+function dueOn(a, d){
+  const wd = parseYmd(d).getDay();
+  if (a.wiederholung === "taeglich") return true;
+  if (a.wiederholung === "woechentlich") return arr(a.tage).map(Number).includes(wd);
+  if (!a.datum) return false;
+  if (a.datum === d) return true;
+  return a.datum < d && !a.fertig; // einmalige Aufgabe bleibt stehen, bis sie erledigt ist
+}
+function assignees(a, d = today()){
+  if (modus(a) !== "ki") return fixedWer(a);
+  const p = day(d).plan?.[a.id];
+  const w = p ? arr(p.wer).filter(id => S.mitglieder[id]) : [];
+  if (w.length) return w;
+  const c = day(d).claims?.[a.id];
+  return c && S.mitglieder[c] ? [c] : [];
+}
+const doneMap = (a, d = today()) => a.wiederholung === "einmal" ? (a.erledigt || {}) : (day(d).done?.[a.id] || {});
+const doneBy = (a, mid, d) => doneMap(a, d)[mid] || null;
+const todays = () => tasks().filter(a => dueOn(a, today()));
+const tasksFor = mid => todays().filter(a => assignees(a).includes(mid));
+const freeTasks = () => todays().filter(a => !assignees(a).length && !Object.keys(doneMap(a)).length);
+const isLate = (a, mid) => !doneBy(a, mid) && a.erinnerung && nowHM() >= a.erinnerung;
+const grundOf = a => day().plan?.[a.id]?.grund || "";
+function units(){ let all = 0, done = 0; const by = {}; for (const a of todays()){ const as = assignees(a); if (!as.length){ all++; continue; } for (const id of as){ all++; if (doneBy(a,id)){ done++; by[id] = (by[id]||0)+1; } } } return { all, done, by }; }
+function repeatTxt(a){
+  if (a.wiederholung === "taeglich") return "täglich";
+  if (a.wiederholung === "woechentlich"){ const t = arr(a.tage).map(Number).sort((x,y)=>((x+6)%7)-((y+6)%7)); return t.length === 7 ? "täglich" : t.length ? t.map(i=>WTK[i]).join(", ") : "wöchentlich"; }
+  if (!a.datum) return "einmalig"; const d = parseYmd(a.datum); return a.datum === today() ? "heute" : `am ${d.getDate()}. ${MON[d.getMonth()]}`;
+}
+function weekStats(mid){
+  const ws = weekStart(); let n = 0, min = 0;
+  for (const [d, t] of Object.entries(S.tage)) if (d >= ws) for (const v of Object.values(t.done||{})){ const x = v?.[mid]; if (x){ n++; min += x.min||0; } }
+  for (const a of tasks()) if (a.wiederholung === "einmal"){ const x = a.erledigt?.[mid]; if (x && ymd(new Date(x.um)) >= ws){ n++; min += x.min||0; } }
+  return { n, min };
+}
+
+async function setDone(a, mid, on, quelle){
+  const val = on ? { um: Date.now(), min: Number(a.minuten)||0 } : null;
+  const d = today();
+  if (a.wiederholung === "einmal"){
+    S.aufgaben[a.id].erledigt = { ...(a.erledigt||{}), [mid]: val || undefined };
+    const all = assignees(a); const fertig = on && (all.length ? all.every(id => id === mid || a.erledigt?.[id]) : true);
+    render();
+    await write({ [`aufgaben/${a.id}/erledigt/${mid}`]: val, [`aufgaben/${a.id}/fertig`]: fertig || null });
+  } else {
+    S.tage[d] = S.tage[d] || {}; S.tage[d].done = S.tage[d].done || {}; S.tage[d].done[a.id] = { ...(S.tage[d].done[a.id]||{}), [mid]: val || undefined };
+    if (!on) delete S.tage[d].done[a.id][mid];
+    render();
+    await write({ [`tage/${d}/done/${a.id}/${mid}`]: val });
+  }
+  if (on){
+    const m = member(mid);
+    const left = tasksFor(mid).filter(x => !doneBy(x, mid)).length;
+    toast(left ? `Super, ${m?.name||""}! Noch ${left} übrig.` : `Klasse, ${m?.name||""}! Alles geschafft!`);
+    if (opt("pushErledigt")) push(`${m?.name||"Jemand"} hat „${a.titel}“ erledigt`, left ? `Noch ${left} Aufgabe${left>1?"n":""} offen.` : `${m?.name} hat heute alles geschafft.`, "white_check_mark");
+  }
+}
+async function claimFor(a, mid){
+  const d = today(); S.tage[d] = S.tage[d] || {}; S.tage[d].claims = { ...(S.tage[d].claims||{}), [a.id]: mid };
+  closeSheet(); render();
+  await write({ [`tage/${d}/claims/${a.id}`]: mid });
+  toast(`${member(mid)?.name} macht „${a.titel}“ – danke!`);
+  push(`${member(mid)?.name} übernimmt „${a.titel}“`, `Freiwillig für heute (${minTxt(a.minuten)||"kurz"}).`, "raised_hand");
+}
+async function setTodayAssignees(a, ids){
+  const d = today();
+  if (modus(a) === "ki"){
+    S.tage[d] = S.tage[d] || {}; S.tage[d].plan = { ...(S.tage[d].plan||{}), [a.id]: { wer: ids, grund: "Von Mama für heute festgelegt." } };
+    render();
+    await write({ [`tage/${d}/plan/${a.id}`]: { wer: ids, grund: "Von Mama für heute festgelegt." }, [`tage/${d}/claims/${a.id}`]: null });
+  } else { S.aufgaben[a.id].wer = ids; render(); await write({ [`aufgaben/${a.id}/wer`]: ids }); }
+  if (ids.length && opt("pushPlan")) push(`Neue Aufgabe für ${namesOf(ids)}`, `„${a.titel}“ (${minTxt(a.minuten)||"kurz"})`, "clipboard");
+}
+
+// ---------- Push über ntfy ----------
+const topic = () => S.settings.ntfyTopic || (CODE ? `familienplaner-${CODE}` : "");
+async function push(title, message, tag){
+  const t = topic(); if (!t) return;
+  try { await fetch("https://ntfy.sh/", { method: "POST", body: JSON.stringify({ topic: t, title, message: message || title, tags: tag ? [tag] : [] }) }); } catch(_) {}
+}
+
+// ---------- KI (Gemini) ----------
+const GEM = "https://generativelanguage.googleapis.com/v1beta";
+async function listModels(key){
+  const r = await fetch(`${GEM}/models?pageSize=200&key=${encodeURIComponent(key)}`);
+  if (!r.ok) throw new Error(r.status === 400 || r.status === 403 ? "Der KI-Schlüssel ist ungültig." : `Fehler ${r.status}`);
+  const j = await r.json();
+  const ok = (j.models||[]).filter(m => (m.supportedGenerationMethods||[]).includes("generateContent")).map(m => m.name.replace(/^models\//, ""))
+    .filter(n => /flash/i.test(n) && !/image|tts|audio|live|embed|robot|computer|exp/i.test(n));
+  const ver = n => { const m = n.match(/(\d+(?:\.\d+)?)/); return m ? parseFloat(m[1]) : 0; };
+  return ok.sort((a,b) => (/preview/.test(a) - /preview/.test(b)) || (ver(b) - ver(a)) || (/lite/.test(a) - /lite/.test(b)));
+}
+async function gemini(prompt){
+  const key = S.settings.geminiKey; if (!key) throw new Error("Kein KI-Schlüssel eingetragen.");
+  let models = S.settings.geminiModel ? [S.settings.geminiModel] : [];
+  const tryModel = async model => {
+    const r = await fetch(`${GEM}/models/${model}:generateContent?key=${encodeURIComponent(key)}`, { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json", temperature: 0.5 } }) });
+    if (!r.ok){ const e = new Error(`Fehler ${r.status}`); e.status = r.status; throw e; }
+    const j = await r.json();
+    const text = (j.candidates?.[0]?.content?.parts || []).filter(p => !p.thought).map(p => p.text || "").join("");
+    const m = text.match(/\{[\s\S]*\}/); if (!m) throw new Error("Keine gültige Antwort.");
+    return JSON.parse(m[0]);
+  };
+  let lastErr;
+  for (let round = 0; round < 2; round++){
+    for (const model of models){
+      try { const out = await tryModel(model); if (model !== S.settings.geminiModel) write({ "settings/geminiModel": model }); return out; }
+      catch(e){ lastErr = e; if (e.status === 400 && /key/i.test(e.message)) throw new Error("Der KI-Schlüssel ist ungültig."); }
+    }
+    if (round === 0){ try { models = (await listModels(key)).filter(m => m !== S.settings.geminiModel).slice(0, 4); } catch(e){ throw e; } }
+  }
+  throw new Error(lastErr?.status === 429 ? "Das kostenlose KI-Kontingent ist für heute verbraucht." : "Die KI hat nicht geantwortet.");
+}
+function buildPrompt(d){
+  const wd = WT[parseYmd(d).getDay()];
+  const ppl = members().map(m => ({ id: m.id, name: m.name, rolle: ROLLEN[rolleOf(m)], alter: m.alter ? Number(m.alter) : null, beschreibung: m.beschreibung || "" }));
+  const fest = todays().filter(a => modus(a) !== "ki").map(a => ({ titel: a.titel, minuten: Number(a.minuten)||0, fuer: fixedWer(a).map(id => member(id)?.name) }));
+  const offen = tasks().filter(a => modus(a) === "ki" && dueOn(a, d)).map(a => ({ id: a.id, titel: a.titel, minuten: Number(a.minuten)||0, beschreibung: a.beschreibung || "", jeder_fuer_sich: !!a.jeder }));
+  const verlauf = Object.entries(S.tage).filter(([k]) => k < d).sort().slice(-5).map(([k, t]) => ({ tag: k, verteilung: Object.entries(t.plan||{}).map(([tid, p]) => `${task(tid)?.titel||tid}: ${namesOf(arr(p.wer))}`) }));
+  return { offen, text: `Du bist eine erfahrene Familien-Organisatorin. Verteile die heutigen Hausarbeiten (${wd}, ${d}) fair, altersgerecht und abwechslungsreich. Antworte NUR mit JSON.
+
+Personen im Haushalt:
+${JSON.stringify(ppl)}
+
+Feste/persönliche Aufgaben heute (schon vergeben, nur für die Belastung mitzählen):
+${JSON.stringify(fest)}
+
+Zu verteilende Aufgaben heute:
+${JSON.stringify(offen)}
+
+Verteilung der letzten Tage (für Abwechslung):
+${JSON.stringify(verlauf)}
+
+Hinweise der Mutter: ${S.settings.kiHinweise || "keine"}
+
+Regeln:
+1. Halte dich strikt an Alter und Beschreibung jeder Person. Grobe Orientierung: 3–5 Jahre nur Spielsachen wegräumen, eigenes Zimmer (einfach), Besteck auf den Tisch, Socken sortieren. 6–8 Jahre zusätzlich Tisch decken/abräumen, Besteck aus der Spülmaschine, Pflanzen gießen. 9–12 Jahre zusätzlich Spülmaschine ausräumen, Müll rausbringen, Staubsaugen, Wäsche aufhängen. Ab 13 fast alles außer gefährlichen Arbeiten. Erwachsene/Admin übernehmen den Rest.
+2. Aufgaben mit "jeder_fuer_sich": true (z. B. eigenes Zimmer, Hausaufgaben) gehen an JEDES Kind, für das sie altersgerecht sind.
+3. Verteile die Minuten fair nach Alter, wechsle Aufgaben zwischen den Tagen ab, wenn das sinnvoll ist.
+4. Jede Aufgabe bekommt mindestens eine Person. Nutze nur die angegebenen ids.
+5. "grund": ein kurzer freundlicher Satz auf Deutsch (höchstens 14 Wörter), z. B. warum es zu Alter oder Rolle passt.
+
+Format:
+{"plan":[{"id":"<aufgaben-id>","wer":["<personen-id>"],"grund":"..."}],"fazit":"ein Satz"}` };
+}
+let planBusy = false;
+async function makePlan(d, force){
+  if (planBusy || !S.settings.geminiKey || !members().length) return false;
+  const { offen, text } = buildPrompt(d);
+  if (!offen.length) return false;
+  planBusy = true; render();
+  try {
+    if (!force){
+      const res = await runTransaction(ref(db, `${base()}/tage/${d}/planStatus`), cur => {
+        if (cur && (cur.ok || Date.now() - (cur.zeit||0) < 10*60e3)) return; // schon erledigt oder ein anderes Gerät arbeitet gerade
+        return { zeit: Date.now(), von: DEVICE };
+      });
+      if (!res.committed){ planBusy = false; return false; }
+    }
+    const out = await gemini(text);
+    const valid = new Set(Object.keys(S.mitglieder)), ids = new Set(offen.map(t => t.id));
+    const plan = {};
+    for (const x of out.plan || []){ if (!ids.has(x.id)) continue; const wer = [...new Set(arr(x.wer).filter(id => valid.has(id)))]; if (wer.length) plan[x.id] = { wer, grund: String(x.grund||"").slice(0, 140) }; }
+    if (!Object.keys(plan).length) throw new Error("Die KI hat keinen brauchbaren Plan geliefert.");
+    await dbSet(ref(db, `${base()}/tage/${d}/plan`), plan);
+    await write({ [`tage/${d}/planStatus`]: { ok: true, zeit: Date.now(), von: DEVICE, fazit: String(out.fazit||"").slice(0, 200) }, [`tage/${d}/datum`]: d });
+    if (opt("pushPlan")){
+      const by = {}; for (const [tid, p] of Object.entries(plan)) for (const id of p.wer) (by[id] ||= []).push(task(tid)?.titel);
+      for (const a of todays()) if (modus(a) !== "ki") for (const id of fixedWer(a)) (by[id] ||= []).push(a.titel);
+      push(force ? "Aufgaben neu verteilt" : `Plan für ${WT[parseYmd(d).getDay()]}`, members().filter(m => by[m.id]).map(m => `${m.name}: ${by[m.id].join(", ")}`).join("\n"), "clipboard");
+    }
+    planBusy = false; render(); return true;
+  } catch(e){
+    planBusy = false;
+    await write({ [`tage/${d}/planStatus`]: { fehler: e.message || "Fehler", zeit: Date.now(), von: DEVICE } });
+    render();
+    if (force) toast(e.message || "Die KI hat nicht geantwortet.");
+    return false;
+  }
+}
+
+// ---------- Hintergrund: Tagesplan & Erinnerungen ----------
+async function tick(){
+  if (!S.loaded || !CODE) return;
+  const d = today(), st = day(d).planStatus;
+  if (opt("kiAuto") && S.settings.geminiKey && nowHM() >= (opt("kiUhrzeit") || "06:00") && !(st && st.ok) && !(st && Date.now() - (st.zeit||0) < 10*60e3)) makePlan(d, false);
+  if (opt("pushErinnerung") && topic()){
+    for (const a of todays()) for (const mid of assignees(a)){
+      if (!isLate(a, mid)) continue;
+      const key = `${a.id}_${mid}`;
+      if (day(d).erinnert?.[key]) continue;
+      const res = await runTransaction(ref(db, `${base()}/tage/${d}/erinnert/${key}`), cur => cur ? undefined : Date.now()).catch(() => null);
+      if (res && res.committed) push(`Noch offen: ${member(mid)?.name}`, `„${a.titel}“ ist seit ${a.erinnerung} Uhr fällig (${minTxt(a.minuten)||"kurz"}).`, "alarm_clock");
+    }
+  }
+}
+
+// ---------- Ansichten ----------
+let tab = ls.get("fp_tab", "heute");
+const TABS = () => [["heute","Heute",ICON.home],["aufgaben","Aufgaben",ICON.listI],["familie","Familie",ICON.people], ...(isAdmin() ? [["einstellungen","Einstellungen",ICON.gear]] : [])];
+const empty = (b, txt) => `<div class="empty"><b>${b}</b><br>${txt}</div>`;
+
+function chip(a, mid, ctx){
+  const info = doneBy(a, mid), late = !info && isLate(a, mid), key = a.id + "_" + mid;
+  const canTick = ctx === "kitchen" ? opt("kuecheAbhaken") : (isAdmin() || (mid === meId && opt("handyAbhaken")));
+  const sub = info ? `erledigt ${hm(info.um)}` : late ? `seit ${a.erinnerung} fällig` : (minTxt(a.minuten) || "kurz");
+  return `<div class="chip ${info?'done':''} ${late?'late':''} ${canTick?'':'locked'} ${ctx!=="kitchen" && mid===meId?'mine':''} ${justDone===key?'just':''}">
+    <button class="tap" data-tick="${a.id}" data-mid="${mid}" data-ctx="${ctx}" aria-pressed="${!!info}" aria-label="${esc(a.titel)}${info?' erledigt':''}">
+      <span class="ti">${catIcon(a.kategorie)}</span><span class="t">${esc(a.titel)}<small>${sub}</small></span><span class="ck">${ICON.check}</span></button>
+    <button class="info" data-info="${a.id}" aria-label="Infos zu ${esc(a.titel)}">i</button></div>`;
+}
+function freeChip(a, ctx){
+  return `<div class="chip freechip"><button class="tap" data-free="${a.id}" data-ctx="${ctx}"><span class="ti">${catIcon(a.kategorie)}</span><span class="t">${esc(a.titel)}<small>${minTxt(a.minuten)||"kurz"} · übernehmen</small></span><span class="ck">${ICON.hand}</span></button>
+    <button class="info" data-info="${a.id}" aria-label="Infos zu ${esc(a.titel)}">i</button></div>`;
+}
+function boardHtml(ctx){
+  const ppl = members().filter(m => tasksFor(m.id).length || rolleOf(m) === "kind");
+  const rows = ppl.map(m => {
+    const t = tasksFor(m.id).sort((a,b) => (!!doneBy(a,m.id) - !!doneBy(b,m.id)) || (a.erinnerung||"99").localeCompare(b.erinnerung||"99"));
+    const dn = t.filter(a => doneBy(a, m.id)).length, all = t.length && dn === t.length;
+    return `<section class="row ${all?'allok':''}" style="--c:${m.farbe}"><div class="who">${avatar(m)}<div><div class="nm">${esc(m.name)}</div><div class="sub">${all ? `${ICON.star}alles geschafft` : t.length ? `${dn} von ${t.length}` : "heute frei"}</div></div></div>
+      <div class="chips">${t.map(a => chip(a, m.id, ctx)).join("") || `<span class="hint" style="padding:14px 4px">Keine Aufgaben heute.</span>`}</div></section>`;
+  });
+  const free = freeTasks();
+  if (free.length) rows.push(`<section class="row free"><div class="who">${avatar(null)}<div><div class="nm">Noch frei</div><div class="sub">antippen</div></div></div><div class="chips">${free.map(a => freeChip(a, ctx)).join("")}</div></section>`);
+  return rows.length ? `<div class="board">${rows.join("")}</div>` : empty("Heute steht nichts an", isAdmin() ? "Lege unter <b>Aufgaben</b> etwas an." : "Mama kann unter „Aufgaben“ etwas eintragen.");
+}
+function progressHtml(){
+  const u = units();
+  const segs = members().map(m => ({ m, n: u.by[m.id]||0 })).filter(x => x.n);
+  const bar = segs.map(x => `<i style="--c:${x.m.farbe};flex-grow:${x.n}"></i>`).join("") + (u.all - u.done ? `<i style="--c:transparent;flex-grow:${u.all-u.done}"></i>` : "");
+  return { u, bar, legend: segs.map(x => `<span><i class="dot" style="--c:${x.m.farbe}"></i>${esc(x.m.name)} ${x.n}</span>`).join("") };
+}
+function planLine(){
+  const st = day().planStatus;
+  if (planBusy) return `<div class="planinfo">${ICON.spark}Die KI verteilt gerade die Aufgaben …</div>`;
+  if (st?.ok) return `<div class="planinfo">${ICON.spark}Heute von der KI verteilt um ${hm(st.zeit)}${st.fazit ? ` – ${esc(st.fazit)}` : ""}</div>`;
+  if (st?.fehler) return `<div class="planinfo" style="color:var(--warm-fg)">${ICON.spark}KI-Verteilung hat nicht geklappt: ${esc(st.fehler)}</div>`;
+  if (!S.settings.geminiKey && isAdmin()) return `<div class="planinfo">${ICON.spark}Trag unter Einstellungen den KI-Schlüssel ein, dann verteilt die KI jeden Morgen automatisch.</div>`;
+  return "";
+}
+function viewHeute(){
+  if (!tasks().length) return `<div class="section">${empty("Noch keine Hausarbeiten", isAdmin() ? "Lege unter <b>Aufgaben</b> die Hausarbeiten an." : "Sobald Mama Aufgaben anlegt, erscheinen sie hier.")}</div>`;
+  const { u, bar, legend } = progressHtml();
+  let h = "";
+  const late = me() ? tasksFor(meId).filter(a => isLate(a, meId)) : [];
+  if (late.length) h += `<div class="section"><div class="remind" role="alert">${ICON.bell}<div><b>${esc(me().name)}, noch ${late.length === 1 ? "eine Aufgabe" : late.length + " Aufgaben"} offen:</b> ${late.map(a => esc(a.titel)).join(", ")}</div></div></div>`;
+  h += `<div class="section"><div class="hero"><div><div class="eyebrow">Familie heute</div><div class="big">${u.done} <small>von ${u.all} erledigt</small></div></div>
+    <div class="barbox"><div class="bar" role="img" aria-label="${u.done} von ${u.all} erledigt">${bar}</div><div class="legend-row">${legend}</div></div>
+    <button class="btn ghost small" id="openKitchen">${ICON.kitchen}Küchen-Ansicht</button></div>${planLine()}</div>`;
+  h += `<div class="section">${boardHtml("phone")}</div>`;
+  if (!isAdmin() && !opt("handyAbhaken")) h += `<p class="hint" style="margin-top:10px">Abhaken geht nur am Küchen-iPad – so hat Mama es eingestellt.</p>`;
+  return h;
+}
+function viewAufgaben(){
+  let h = "";
+  if (isAdmin()){
+    h += `<div class="section"><div class="card" style="display:flex;gap:14px;align-items:center;flex-wrap:wrap"><span class="ticon" style="background:var(--accent-soft)">${ICON.spark}</span>
+      <div style="flex:1;min-width:200px"><b>KI-Verteilung</b><p class="hint">${S.settings.geminiKey ? (opt("kiAuto") ? `Verteilt jeden Tag ab ${opt("kiUhrzeit")} Uhr automatisch neu.` : "Automatik ist aus. Du kannst von Hand verteilen.") : "Noch kein KI-Schlüssel eingetragen (Einstellungen)."}</p></div>
+      <button class="btn" id="runAI" ${planBusy || !S.settings.geminiKey ? "disabled" : ""}>${ICON.spark}${planBusy ? "Verteilt …" : "Heute neu verteilen"}</button></div>${planLine()}</div>`;
+  } else h += `<p class="hint" style="margin-top:14px">Nur ${esc(admins().map(a=>a.name).join(" oder ") || "Mama")} kann Aufgaben ändern. Tippe auf <b>i</b>, um die Beschreibung zu sehen.</p>`;
+  const all = tasks();
+  if (!all.length) return h + `<div class="section">${empty("Noch keine Aufgaben", isAdmin() ? `Tippe auf <b>+</b> oder <button class="btn small" id="seedTasks" style="margin-top:10px">Typische Hausarbeiten anlegen</button>` : "")}</div>`;
+  const groups = [["Jeden Tag", a => a.wiederholung === "taeglich"], ["Bestimmte Tage", a => a.wiederholung === "woechentlich"], ["Einmalig", a => a.wiederholung === "einmal" && !a.fertig]];
+  for (const [label, f] of groups){
+    const list = all.filter(f).sort((a,b) => (modus(a) === "persoenlich") - (modus(b) === "persoenlich") || (a.titel||"").localeCompare(b.titel||""));
+    if (!list.length) continue;
+    h += `<div class="section"><div class="section-head"><h2>${label}</h2><span class="count">${list.length}</span></div><div class="list">` + list.map(a => {
+      const who = modus(a) === "ki" ? `<span class="pill acc">${ICON.spark.replace('<svg','<svg style="width:12px;height:12px"')}KI verteilt</span>` : `${stack(fixedWer(a))}<span>${esc(namesOf(fixedWer(a)) || "niemand")}</span>${modus(a)==="persoenlich"?`<span class="pill">persönlich</span>`:`<span class="pill">fest</span>`}`;
+      return `<div class="item"><span class="ticon">${catIcon(a.kategorie)}</span><div class="main"><div class="title">${esc(a.titel)}</div>
+        <div class="meta"><span>${ICON.clock}${minTxt(a.minuten)||"ohne Zeit"}</span><span>${repeatTxt(a)}</span>${who}${a.jeder?`<span class="pill">jedes Kind</span>`:""}</div></div>
+        <button class="icon-btn" data-info="${a.id}" aria-label="Infos" style="font-family:Georgia,serif;font-style:italic;font-weight:700;font-size:18px">i</button>
+        ${isAdmin()?`<button class="icon-btn" data-edit="${a.id}" aria-label="Bearbeiten">${ICON.edit}</button>`:''}</div>`;
+    }).join("") + `</div></div>`;
+  }
+  return h;
+}
+function viewFamilie(){
+  let h = `<div class="section"><div class="section-head"><h2>Diese Woche geschafft</h2>${isAdmin()?`<button class="btn small" id="addMember">${ICON.plus}Person</button>`:''}</div><div class="people">` +
+    members().map(m => { const s = weekStats(m.id); const own = tasks().filter(a => modus(a) === "persoenlich" && fixedWer(a).includes(m.id));
+      return `<div class="person">${avatar(m)}<div class="n">${esc(m.name)}${m.alter ? `, ${esc(m.alter)}` : ""}</div><span class="pill">${ROLLEN[rolleOf(m)]}</span>
+        ${m.beschreibung ? `<div class="desc">${esc(m.beschreibung)}</div>` : ""}
+        ${own.length ? `<div class="desc"><b>Eigene Aufgaben:</b> ${own.map(a => esc(a.titel)).join(", ")}</div>` : ""}
+        <div class="stats"><div><b>${s.n}</b>erledigt</div><div><b>${s.min >= 60 ? (s.min/60).toFixed(1).replace(".",",")+" h" : s.min+" Min."}</b>Zeit</div></div>
+        ${isAdmin() || m.id === meId ? `<button class="btn ghost small" data-edit-m="${m.id}">${ICON.edit}Bearbeiten</button>` : ''}</div>`; }).join("") + `</div></div>`;
+  h += `<div class="section"><div class="setting"><span class="ticon">${ICON.lock}</span><div class="main"><div class="title">Angemeldet als ${esc(me()?.name||"–")}</div><div class="hint">Auf diesem Gerät</div></div><button class="btn ghost small" id="switchMe">Wechseln</button></div></div>`;
+  return h;
+}
+const toggleRow = (key, title, desc) => `<div class="setting"><div class="main"><div class="title">${title}</div><div class="hint">${desc}</div></div><button class="switch" role="switch" aria-checked="${!!opt(key)}" aria-label="${esc(title)}" data-opt="${key}"></button></div>`;
+function viewEinstellungen(){
+  if (!isAdmin()) return "";
+  const link = `${location.origin}${location.pathname}#${CODE}`;
+  return `<div class="section"><h2>Geräte verbinden</h2>
+    <div class="setting col"><div class="hint">Öffne diesen Link auf jedem Gerät (iPad, Handys) einmal. Danach gehört das Gerät zu eurer Familie. Nicht öffentlich teilen.</div>
+      <div class="code" id="famLink">${esc(link)}</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn small" data-copy="${esc(link)}">${ICON.copy}Link kopieren</button><span class="hint" style="align-self:center">Familien-Code: <b>${esc(CODE)}</b></span></div></div></div>
+    <div class="section"><h2>Küchen-iPad</h2>
+    <div class="setting"><span class="ticon">${ICON.kitchen}</span><div class="main"><div class="title">Küchen-Ansicht auf diesem Gerät</div><div class="hint">Zeigt dauerhaft die Tagesübersicht für alle. Beenden nur mit Admin-PIN.</div></div><button class="btn small" id="startKitchen">Starten</button></div>
+    ${toggleRow("kuecheAbhaken", "Am Küchen-iPad abhaken", "Aus: Das iPad zeigt nur an.")}
+    ${toggleRow("kuecheUebernehmen", "Freie Aufgaben am Küchen-iPad übernehmen", "Kinder tippen auf eine freie Aufgabe und dann auf ihr Foto.")}
+    ${toggleRow("handyAbhaken", "Andere haken auf eigenem Handy ab", "Aus: Nur du und das Küchen-iPad können abhaken.")}</div>
+    <div class="section"><h2>Push-Nachrichten (ntfy)</h2>
+    <div class="setting col"><div class="hint">1. App <b>ntfy</b> installieren. 2. Auf <b>+</b> tippen. 3. Diesen Kanal eintragen:</div>
+      <div class="code">${esc(topic())}</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn small" data-copy="${esc(topic())}">${ICON.copy}Kanal kopieren</button><button class="btn ghost small" id="testPush">${ICON.bell}Test senden</button></div></div>
+    ${toggleRow("pushErledigt", "Wenn etwas erledigt wurde", "z. B. „Esther hat Geige üben erledigt“.")}
+    ${toggleRow("pushPlan", "Wenn Aufgaben verteilt werden", "Jeden Morgen der Tagesplan und bei Änderungen.")}
+    ${toggleRow("pushErinnerung", "Wenn eine Aufgabe überfällig ist", "Einmal pro Aufgabe nach der eingestellten Uhrzeit.")}</div>
+    <div class="section"><h2>KI-Verteilung (Google Gemini)</h2>
+    <div class="setting col"><div class="field"><label for="gemKey">KI-Schlüssel aus Google AI Studio</label><input id="gemKey" type="password" autocomplete="off" placeholder="${S.settings.geminiKey ? "gespeichert – zum Ändern neu einfügen" : "AIza…"}"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><button class="btn small" id="saveKey">Speichern & testen</button>${S.settings.geminiKey?`<button class="btn danger" id="delKey">Schlüssel entfernen</button>`:""}<span class="hint" id="keyStatus">${S.settings.geminiModel ? `Modell: ${esc(S.settings.geminiModel)}` : ""}</span></div></div>
+    ${toggleRow("kiAuto", "Jeden Tag automatisch verteilen", "Das erste Gerät, das morgens offen ist (z. B. das Küchen-iPad), lässt die KI den Tag planen.")}
+    <div class="setting"><div class="main"><div class="title">Uhrzeit für den Tagesplan</div><div class="hint">Ab dann wird verteilt.</div></div><input type="time" id="kiTime" value="${esc(opt("kiUhrzeit"))}" style="min-height:42px;border-radius:10px;border:1.5px solid var(--line);background:var(--bg);padding:0 10px"></div>
+    <div class="setting col"><div class="field"><label for="kiHints">Hinweise für die KI</label><textarea id="kiHints" placeholder="z. B. Am Wochenende sollen die Kinder weniger machen. Esther hilft gern in der Küche.">${esc(S.settings.kiHinweise||"")}</textarea></div>
+      <div style="display:flex;justify-content:flex-end"><button class="btn small" id="saveHints">Hinweise speichern</button></div></div>
+    <p class="hint">Alter, Beschreibung und eigene Aufgaben stellst du bei jeder Person unter <b>Familie</b> ein.</p></div>
+    <div class="section"><h2>Sicherheit</h2>
+    <div class="setting"><span class="ticon">${ICON.lock}</span><div class="main"><div class="title">Admin-PIN</div><div class="hint">${S.settings.pin ? "Gesetzt." : "Keine PIN – jeder kann das Admin-Profil öffnen."}</div></div><button class="btn ghost small" id="setPin">${S.settings.pin?"Ändern":"Festlegen"}</button></div></div>`;
+}
+
+let justDone = "";
+function renderKitchen(){
+  const d = new Date();
+  if (!S.loaded){ $("#kitchen").innerHTML = `<div class="empty">Wird geladen …</div>`; return; }
+  const { u, bar } = progressHtml();
+  $("#kitchen").innerHTML = `<div class="k-top"><div class="k-clock">${pad(d.getHours())}:${pad(d.getMinutes())}</div>
+      <div class="k-date">${WT[d.getDay()]}<small>${d.getDate()}. ${MONL[d.getMonth()]}</small></div>
+      <div class="k-prog"><div class="lbl"><span>Familie heute</span><span>${u.done} von ${u.all} erledigt</span></div><div class="bar">${bar}</div></div></div>
+    ${boardHtml("kitchen")}
+    <div class="k-foot"><span>${opt("kuecheAbhaken") ? "Antippen = erledigt. Nochmal tippen = rückgängig. „i“ = genaue Beschreibung." : "Abhaken ist hier ausgeschaltet."}${S.online ? "" : " · Keine Internetverbindung!"}</span>
+      <button class="btn ghost small" id="exitKitchen">${ICON.lock}Beenden</button></div>`;
+  justDone = "";
+}
+function renderTabs(){
+  if (!TABS().some(t => t[0] === tab)) tab = "heute";
+  $("#tabbar").innerHTML = TABS().map(([k,l,i]) => `<button role="tab" data-tab="${k}" aria-selected="${tab===k}">${i}${l}</button>`).join("");
+}
+function render(){
+  document.body.classList.toggle("kitchen", kitchenMode);
+  $("#kitchen").hidden = !kitchenMode;
+  if (!CODE){ renderSetup(); return; }
+  if (kitchenMode){ $("#fullHost").innerHTML = ""; renderKitchen(); return; }
+  if (!S.loaded) return;
+  if (!members().length){ renderFirstMember(); return; }
+  if (!me()){ renderWho(); return; }
+  if (!whoForced) $("#fullHost").innerHTML = ""; else { renderWho(); return; }
+  renderTabs();
+  const d = new Date();
+  $("#dateline").textContent = `${WT[d.getDay()]}, ${d.getDate()}. ${MONL[d.getMonth()]}`;
+  $("#pageTitle").textContent = { heute:"Hausarbeit heute", aufgaben:"Aufgaben", familie:"Familie", einstellungen:"Einstellungen" }[tab];
+  $("#headActions").innerHTML = `<button class="me-btn" id="switchMe2" aria-label="Profil wechseln">${avatar(me(), 38)}<span>${esc(me().name)}</span></button>`;
+  $("#fab").hidden = !isAdmin() || tab !== "aufgaben";
+  if (document.activeElement && ["kiHints","gemKey","kiTime"].includes(document.activeElement.id)) return; // nicht beim Tippen neu zeichnen
+  $("#view").innerHTML = ({heute:viewHeute, aufgaben:viewAufgaben, familie:viewFamilie, einstellungen:viewEinstellungen})[tab]();
+}
+
+// ---------- Einrichtung & Profilwahl ----------
+function renderSetup(){
+  $("#fullHost").innerHTML = `<div class="fullscreen"><div><div class="eyebrow">Willkommen</div><h1>Familienplaner einrichten</h1></div>
+    <div class="setup card"><b>Neue Familie anlegen</b><p class="hint">Nur einmal, auf dem ersten Gerät. Danach verbindest du die anderen Geräte mit einem Link.</p><button class="btn" id="newFamily">Familie anlegen</button></div>
+    <form class="setup card" id="joinForm"><b>Dieses Gerät verbinden</b><div class="field"><label for="joinCode">Familien-Code</label><input id="joinCode" autocomplete="off" autocapitalize="off" placeholder="z. B. k7xm2p…"></div><button class="btn ghost" type="submit">Verbinden</button></form></div>`;
+}
+function renderFirstMember(){
+  $("#fullHost").innerHTML = `<div class="fullscreen"><div><div class="eyebrow">Fast geschafft</div><h1>Wer richtet den Planer ein?</h1></div>
+    <form class="setup card" id="firstForm"><div class="field"><label for="firstName">Name des Admins</label><input id="firstName" value="Mama" autocomplete="off"></div>
+    <label style="display:flex;gap:10px;align-items:flex-start"><input type="checkbox" id="withFamily" checked style="width:22px;height:22px;margin-top:2px"><span>Esther, Daniel und Hannah (4) gleich mit anlegen, dazu typische Hausarbeiten und Esthers Geige üben</span></label>
+    <button class="btn" type="submit">Loslegen</button></form></div>`;
+}
+let whoForced = false;
+function renderWho(){
+  $("#fullHost").innerHTML = `<div class="fullscreen"><div><div class="eyebrow">Familienplaner</div><h1>Wer bist du?</h1></div>
+    <div class="who-grid">${members().map(m => `<button data-me="${m.id}">${avatar(m)}<span>${esc(m.name)}</span></button>`).join("")}</div>
+    <button class="btn ghost" id="whoKitchen">${ICON.kitchen}Küchen-Ansicht für alle</button>
+    ${whoForced && me() ? `<button class="btn ghost" id="whoCancel">Abbrechen</button>` : ""}</div>`;
+}
+function chooseMe(id){
+  const m = member(id); if (!m) return;
+  const go = () => { meId = id; ls.set("fp_me", id); whoForced = false; $("#fullHost").innerHTML = ""; render(); };
+  if (m.rolle === "admin" && meId !== id) pinGate(`PIN für ${m.name}`, go, false); else go();
+}
+const SEED_TASKS = [
+  { titel:"Spülmaschine ausräumen", kategorie:"kueche", minuten:10, wiederholung:"taeglich", erinnerung:"18:00", beschreibung:"Teller, Gläser und Besteck an ihren Platz. Scharfe Messer nur die Großen." },
+  { titel:"Tisch decken & abräumen", kategorie:"kueche", minuten:10, wiederholung:"taeglich", erinnerung:"20:00", beschreibung:"Vor dem Abendessen decken, danach alles in die Küche bringen und den Tisch abwischen." },
+  { titel:"Müll rausbringen", kategorie:"muell", minuten:5, wiederholung:"taeglich", erinnerung:"19:00", beschreibung:"Volle Tüten zur Mülltonne bringen, neuen Beutel einlegen." },
+  { titel:"Eigenes Zimmer aufräumen", kategorie:"aufraeumen", minuten:15, wiederholung:"taeglich", erinnerung:"19:30", jeder:true, beschreibung:"Boden frei, Kleidung in den Schrank oder Wäschekorb, Bett gemacht." },
+  { titel:"Spielsachen aufräumen", kategorie:"spielzeug", minuten:10, wiederholung:"taeglich", erinnerung:"19:00", beschreibung:"Alle Spielsachen im Wohnzimmer zurück in die Kisten." },
+  { titel:"Hausaufgaben machen", kategorie:"schule", minuten:30, wiederholung:"woechentlich", tage:[1,2,3,4,5], erinnerung:"17:00", jeder:true, beschreibung:"Für alle Schulkinder. Danach Mama zeigen." },
+  { titel:"Wäsche aufhängen", kategorie:"waesche", minuten:15, wiederholung:"woechentlich", tage:[1,3,5], erinnerung:"18:00", beschreibung:"Wäsche aus der Maschine ausschütteln und ordentlich auf den Ständer hängen." },
+  { titel:"Staubsaugen", kategorie:"putzen", minuten:30, wiederholung:"woechentlich", tage:[6], erinnerung:"17:00", beschreibung:"Wohnzimmer, Flur und Küche. Vorher Sachen vom Boden aufheben." },
+  { titel:"Bad putzen", kategorie:"bad", minuten:45, wiederholung:"woechentlich", tage:[6], erinnerung:"17:00", beschreibung:"Waschbecken, Toilette und Spiegel. Das Putzmittel steht unter der Spüle." },
+];
+function seedTaskUpdates(extra = {}){
+  const u = {};
+  SEED_TASKS.forEach((t, i) => { u[`aufgaben/${uid()}${i}`] = { tage: [], datum: "", modus: "ki", wer: [], jeder: false, erstellt: Date.now(), ...t }; });
+  return { ...u, ...extra };
+}
+
+// ---------- Blätter ----------
+function closeSheet(){ $("#sheetHost").innerHTML = ""; }
+function openSheet(html, onMount){
+  $("#sheetHost").innerHTML = `<div class="sheet-bg" id="sheetBg"><form class="sheet" id="sheet" novalidate>${html}</form></div>`;
+  $("#sheetBg").addEventListener("click", e => { if (e.target.id === "sheetBg") closeSheet(); });
+  onMount && onMount($("#sheet"));
+}
+function pinGate(title, ok, confirmIfNoPin){
+  if (!S.settings.pin){
+    if (!confirmIfNoPin) return ok();
+    openSheet(`<h2>${esc(title)}?</h2><div class="sheet-actions"><div class="right"><button type="button" class="btn ghost" id="cancel">Abbrechen</button><button class="btn" type="submit">Ja</button></div></div>`, s => { s.querySelector("#cancel").onclick = closeSheet; s.onsubmit = e => { e.preventDefault(); closeSheet(); ok(); }; });
+    return;
+  }
+  openSheet(`<h2>${esc(title)}</h2><div class="field"><label for="pinIn">Admin-PIN</label><input id="pinIn" inputmode="numeric" autocomplete="off" type="password"></div><p class="err" id="pinErr" hidden>Die PIN stimmt nicht.</p>
+    <div class="sheet-actions"><div class="right"><button type="button" class="btn ghost" id="cancel">Abbrechen</button><button class="btn" type="submit">Weiter</button></div></div>`, s => {
+    s.querySelector("#cancel").onclick = closeSheet; setTimeout(() => s.querySelector("#pinIn").focus(), 50);
+    s.onsubmit = e => { e.preventDefault(); if (s.querySelector("#pinIn").value === String(S.settings.pin)){ closeSheet(); ok(); } else s.querySelector("#pinErr").hidden = false; };
+  });
+}
+function infoSheet(a, ctx){
+  const as = assignees(a), g = grundOf(a);
+  const adminHere = isAdmin() && ctx !== "kitchen";
+  openSheet(`<div style="display:flex;gap:14px;align-items:center"><span class="ticon" style="width:54px;height:54px">${catIcon(a.kategorie).replace('<svg','<svg style="width:30px;height:30px"')}</span><div><h2 style="font-size:24px">${esc(a.titel)}</h2>
+      <div class="meta"><span>${ICON.clock}${minTxt(a.minuten)||"ohne Zeitangabe"}</span><span>${repeatTxt(a)}</span>${a.erinnerung?`<span>${ICON.bell}bis ${a.erinnerung} Uhr</span>`:""}</div></div></div>
+    <div><div class="legend" style="margin-bottom:6px">So geht's</div><div class="desc-box">${a.beschreibung ? esc(a.beschreibung) : `<span class="hint">Mama hat noch keine Beschreibung geschrieben.</span>`}</div></div>
+    <div class="meta">${as.length ? `${stack(as, 30)}<b style="color:var(--fg)">Heute: ${esc(namesOf(as))}</b>` : `<span class="pill">Heute noch frei</span>`}</div>
+    ${g ? `<div class="reason">${ICON.spark}<span>${esc(g)}</span></div>` : ""}
+    ${adminHere ? `<div class="field"><span class="legend">Heute zuteilen</span><div class="picker" id="todayPick">${members().map(m => `<button type="button" class="pick" data-v="${m.id}" aria-pressed="${as.includes(m.id)}">${avatar(m)}<span class="nm">${esc(m.name)}</span></button>`).join("")}</div></div>` : ""}
+    <div class="sheet-actions">${adminHere ? `<button type="button" class="btn ghost small" id="editTask">${ICON.edit}Bearbeiten</button>` : ""}
+      <div class="right">${!as.length && a.wiederholung !== "einmal" && (ctx !== "kitchen" || opt("kuecheUebernehmen")) ? `<button type="button" class="btn" id="takeIt">${ICON.hand}Übernehmen</button>` : ""}<button type="button" class="btn ${adminHere?'':'ghost'}" id="cancel">${adminHere ? "Fertig" : "Schließen"}</button></div></div>`, s => {
+    let sel = [...as];
+    s.querySelector("#cancel").onclick = async () => { closeSheet(); if (adminHere && (sel.length !== as.length || sel.some(x => !as.includes(x)))) await setTodayAssignees(a, sel); };
+    const tp = s.querySelector("#todayPick"); if (tp) tp.onclick = e => { const b = e.target.closest("[data-v]"); if (!b) return; const v = b.dataset.v; sel = sel.includes(v) ? sel.filter(x => x !== v) : [...sel, v]; b.setAttribute("aria-pressed", sel.includes(v)); };
+    const ed = s.querySelector("#editTask"); if (ed) ed.onclick = () => taskForm(a);
+    const tk = s.querySelector("#takeIt"); if (tk) tk.onclick = () => ctx === "kitchen" ? whoSheet(a) : claimFor(a, meId);
+  });
+}
+function whoSheet(a){
+  if (!opt("kuecheUebernehmen") || a.wiederholung === "einmal"){ toast("Diese Aufgabe teilt Mama ein."); return; }
+  openSheet(`<div style="display:flex;gap:14px;align-items:center"><span class="ticon" style="width:54px;height:54px">${catIcon(a.kategorie).replace('<svg','<svg style="width:30px;height:30px"')}</span><div><h2 style="font-size:24px">${esc(a.titel)}</h2><div class="meta"><span>${ICON.clock}${minTxt(a.minuten)||"kurz"}</span></div></div></div>
+    <h2 style="text-align:center">Wer macht das?</h2><div class="bigpick">${members().map(m => `<button type="button" data-who="${m.id}">${avatar(m)}<span>${esc(m.name)}</span></button>`).join("")}</div>
+    <div class="sheet-actions"><div class="right"><button type="button" class="btn ghost" id="cancel">Abbrechen</button></div></div>`, s => {
+    s.querySelector("#cancel").onclick = closeSheet;
+    s.querySelector(".bigpick").onclick = e => { const b = e.target.closest("[data-who]"); if (b) claimFor(a, b.dataset.who); };
+  });
+}
+
+function taskForm(a, preset = {}){
+  const x = a || { titel:"", kategorie:"kueche", minuten:15, wiederholung:"taeglich", tage:[], datum: today(), wer:[], modus:"ki", erinnerung:"18:00", jeder:false, beschreibung:"", ...preset };
+  let rep = x.wiederholung || "einmal", tage = arr(x.tage).map(Number), cat = x.kategorie || "sonstiges", min = Number(x.minuten)||0, wer = arr(x.wer), mod = modus(x), jeder = !!x.jeder;
+  const pers = mod === "persoenlich";
+  const MINS = [5,10,15,20,30,45,60,90];
+  openSheet(`<h2>${a ? "Aufgabe bearbeiten" : pers ? `Eigene Aufgabe für ${esc(member(wer[0])?.name||"")}` : "Neue Hausarbeit"}</h2>
+    <div class="field"><label for="f-titel">Was ist zu tun?</label><input id="f-titel" value="${esc(x.titel)}" placeholder="${pers ? "z. B. Geige üben" : "z. B. Bad putzen"}" autocomplete="off"></div>
+    <div class="field"><label for="f-desc">Beschreibung <span class="hint">(erscheint beim „i“)</span></label><textarea id="f-desc" placeholder="z. B. Waschbecken, Toilette und Spiegel. Putzmittel steht unter der Spüle.">${esc(x.beschreibung||"")}</textarea></div>
+    <div class="field"><span class="legend">Symbol</span><div class="seg" id="f-cat">${Object.entries(CATS).map(([k,c]) => `<button type="button" data-v="${k}">${SV(c.p)}${c.l}</button>`).join("")}</div></div>
+    <div class="field"><span class="legend">Dauert ungefähr</span><div class="seg" id="f-min">${MINS.map(m => `<button type="button" data-v="${m}">${m < 60 ? m+" Min." : (m/60).toString().replace(".",",")+" Std."}</button>`).join("")}</div></div>
+    <div class="field"><span class="legend">Wie oft?</span><div class="seg" id="f-rep"><button type="button" data-v="taeglich">Jeden Tag</button><button type="button" data-v="woechentlich">Bestimmte Tage</button><button type="button" data-v="einmal">Einmal</button></div></div>
+    <div class="field" id="f-tagbox"><span class="legend">An welchen Tagen?</span><div class="seg" id="f-tage">${[1,2,3,4,5,6,0].map(i=>`<button type="button" data-v="${i}">${WTK[i]}</button>`).join("")}</div></div>
+    <div class="field" id="f-datebox"><label for="f-datum">An welchem Tag?</label><input type="date" id="f-datum" value="${esc(x.datum||today())}"></div>
+    ${pers ? "" : `<div class="field"><span class="legend">Wer macht das?</span><div class="seg" id="f-mod"><button type="button" data-v="ki">${ICON.spark}KI verteilt jeden Tag</button><button type="button" data-v="fest">Immer dieselben</button></div></div>
+    <div class="field" id="f-werbox"><div class="picker" id="f-wer">${members().map(m => `<button type="button" class="pick" data-v="${m.id}">${avatar(m)}<span class="nm">${esc(m.name)}</span></button>`).join("")}</div></div>
+    <div class="setting" id="f-jederbox" style="box-shadow:none;background:var(--sunk)"><div class="main"><div class="title">Jedes Kind macht das für sich</div><div class="hint">z. B. eigenes Zimmer, Hausaufgaben. Die KI gibt es jedem Kind, für das es passt.</div></div><button type="button" class="switch" role="switch" id="f-jeder" aria-label="Jedes Kind für sich"></button></div>`}
+    <div class="field"><label for="f-rem">Erinnern, wenn noch offen ab</label><input type="time" id="f-rem" value="${esc(x.erinnerung||"")}"></div>
+    <p class="err" id="f-err" hidden></p>
+    <div class="sheet-actions">${a?`<button type="button" class="btn danger" id="f-del">Löschen</button>`:''}
+      <div class="right"><button type="button" class="btn ghost" id="cancel">Abbrechen</button><button class="btn" type="submit">Speichern</button></div></div>`, s => {
+    const sync = () => {
+      s.querySelectorAll("#f-cat button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === cat));
+      s.querySelectorAll("#f-min button").forEach(b => b.setAttribute("aria-pressed", Number(b.dataset.v) === min));
+      s.querySelectorAll("#f-rep button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === rep));
+      s.querySelectorAll("#f-tage button").forEach(b => b.setAttribute("aria-pressed", tage.includes(Number(b.dataset.v))));
+      s.querySelectorAll("#f-mod button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === mod));
+      s.querySelectorAll("#f-wer button").forEach(b => b.setAttribute("aria-pressed", wer.includes(b.dataset.v)));
+      const j = s.querySelector("#f-jeder"); if (j) j.setAttribute("aria-checked", jeder);
+      const wb = s.querySelector("#f-werbox"); if (wb) wb.hidden = mod !== "fest";
+      const jb = s.querySelector("#f-jederbox"); if (jb) jb.hidden = mod !== "ki";
+      s.querySelector("#f-tagbox").hidden = rep !== "woechentlich";
+      s.querySelector("#f-datebox").hidden = rep !== "einmal";
+    };
+    const on = (sel, fn) => { const el = s.querySelector(sel); if (el) el.onclick = e => { const b = e.target.closest("button"); if (b){ fn(b); sync(); } }; };
+    on("#f-cat", b => cat = b.dataset.v); on("#f-min", b => min = Number(b.dataset.v)); on("#f-rep", b => rep = b.dataset.v); on("#f-mod", b => mod = b.dataset.v);
+    on("#f-tage", b => { const v = Number(b.dataset.v); tage = tage.includes(v) ? tage.filter(t => t !== v) : [...tage, v]; });
+    on("#f-wer", b => { const v = b.dataset.v; wer = wer.includes(v) ? wer.filter(t => t !== v) : [...wer, v]; });
+    const j = s.querySelector("#f-jeder"); if (j) j.onclick = () => { jeder = !jeder; sync(); };
+    sync();
+    s.querySelector("#cancel").onclick = closeSheet;
+    if (a){ const del = s.querySelector("#f-del"); del.onclick = () => { if (!del.dataset.c){ del.dataset.c = 1; del.textContent = "Wirklich löschen?"; return; } write({ [`aufgaben/${a.id}`]: null }); closeSheet(); toast("Aufgabe gelöscht"); }; }
+    s.onsubmit = e => {
+      e.preventDefault();
+      const titel = s.querySelector("#f-titel").value.trim(), errEl = s.querySelector("#f-err");
+      const fail = t => { errEl.textContent = t; errEl.hidden = false; };
+      if (!titel) return fail("Bitte gib der Aufgabe einen Namen.");
+      if (rep === "woechentlich" && !tage.length) return fail("Bitte wähle mindestens einen Wochentag.");
+      if (mod === "fest" && !wer.length) return fail("Bitte wähle aus, wer das macht.");
+      const data = { titel, beschreibung: s.querySelector("#f-desc").value.trim(), kategorie: cat, minuten: min, wiederholung: rep, tage: rep === "woechentlich" ? tage : [], datum: rep === "einmal" ? s.querySelector("#f-datum").value : "",
+        modus: mod, wer: mod === "ki" ? [] : wer, jeder: mod === "ki" ? jeder : false, erinnerung: s.querySelector("#f-rem").value,
+        erledigt: a && a.wiederholung === rep ? (a.erledigt || null) : null, fertig: a && a.wiederholung === rep ? (a.fertig || null) : null, erstellt: a?.erstellt || Date.now() };
+      const id = a ? a.id : uid();
+      write({ [`aufgaben/${id}`]: data }); closeSheet(); toast("Gespeichert");
+      if (mod !== "ki" && opt("pushPlan")){ const neu = wer.filter(w => !(a ? fixedWer(a) : []).includes(w)); if (neu.length) push(`Neue Aufgabe für ${namesOf(neu)}`, `„${titel}“ (${repeatTxt(data)}, ${minTxt(min)||"kurz"})`, "clipboard"); }
+    };
+  });
+}
+
+async function resizePhoto(file){
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; });
+    const N = 220, c = document.createElement("canvas"); c.width = c.height = N;
+    const sq = Math.min(img.naturalWidth, img.naturalHeight);
+    c.getContext("2d").drawImage(img, (img.naturalWidth - sq)/2, (img.naturalHeight - sq)/2, sq, sq, 0, 0, N, N);
+    return c.toDataURL("image/jpeg", 0.8);
+  } finally { URL.revokeObjectURL(url); }
+}
+function memberForm(m){
+  const x = m || { name:"", rolle:"kind", foto:"", alter:"", beschreibung:"", farbe: COLORS.find(c => !members().some(o => o.farbe === c)) || COLORS[members().length % COLORS.length] };
+  let foto = x.foto || "", farbe = x.farbe, rolle = rolleOf(x);
+  const canRole = isAdmin() && !(m && m.id === meId);
+  const own = m ? tasks().filter(a => modus(a) === "persoenlich" && fixedWer(a).includes(m.id)) : [];
+  openSheet(`<h2>${m ? esc(m.name) : "Neue Person"}</h2>
+    <div class="photo-edit"><span id="pv"></span><div style="display:flex;flex-direction:column;gap:8px">
+      <label class="btn ghost small" for="m-foto" style="cursor:pointer">${ICON.camera}Foto wählen</label><input type="file" id="m-foto" accept="image/*" hidden>
+      <button type="button" class="btn danger" id="m-nofoto" style="justify-content:flex-start">Foto entfernen</button></div></div>
+    <div class="grid2"><div class="field"><label for="m-name">Name</label><input id="m-name" value="${esc(x.name)}" autocomplete="off"></div>
+    <div class="field"><label for="m-alter">Alter</label><input id="m-alter" type="number" min="1" max="99" inputmode="numeric" value="${esc(x.alter||"")}" placeholder="z. B. 8"></div></div>
+    ${canRole ? `<div class="field"><span class="legend">Rolle</span><div class="seg" id="m-rolle">${Object.entries(ROLLEN).map(([k,l]) => `<button type="button" data-v="${k}">${l}</button>`).join("")}</div></div>` : ""}
+    <div class="field"><label for="m-desc">Was macht ${m ? esc(m.name) : "die Person"} im Haushalt? <span class="hint">(für die KI)</span></label><textarea id="m-desc" placeholder="z. B. Hilft Mama viel in der Küche. Soll vor allem Spielsachen aufräumen.">${esc(x.beschreibung||"")}</textarea></div>
+    <div class="field"><span class="legend">Farbe</span><div class="seg" id="m-farbe">${COLORS.map(c => `<button type="button" data-v="${c}" aria-label="Farbe" style="width:44px;padding:0;justify-content:center"><i class="dot" style="--c:${c};width:22px;height:22px"></i></button>`).join("")}</div></div>
+    ${m && isAdmin() ? `<div class="field"><span class="legend">Eigene Aufgaben nur für ${esc(m.name)}</span>
+      ${own.map(a => `<div class="item" style="box-shadow:none;background:var(--sunk)"><span class="ticon" style="background:var(--surface)">${catIcon(a.kategorie)}</span><div class="main"><div class="title">${esc(a.titel)}</div><div class="hint">${repeatTxt(a)} · ${minTxt(a.minuten)}</div></div><button type="button" class="icon-btn" data-own="${a.id}" aria-label="Bearbeiten">${ICON.edit}</button></div>`).join("") || `<p class="hint">Noch keine. z. B. Geige üben, Hund füttern.</p>`}
+      <button type="button" class="btn ghost small" id="m-own" style="align-self:flex-start">${ICON.plus}Eigene Aufgabe</button></div>` : ""}
+    <p class="err" id="m-err" hidden></p>
+    <div class="sheet-actions">${m && isAdmin() && m.id !== meId ? `<button type="button" class="btn danger" id="m-del">Entfernen</button>` : ""}
+      <div class="right"><button type="button" class="btn ghost" id="cancel">Abbrechen</button><button class="btn" type="submit">Speichern</button></div></div>`, s => {
+    const sync = () => {
+      s.querySelector("#pv").innerHTML = avatar({ name: s.querySelector("#m-name").value || "?", farbe, foto });
+      s.querySelector("#m-nofoto").hidden = !foto;
+      s.querySelectorAll("#m-farbe button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === farbe));
+      s.querySelectorAll("#m-rolle button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === rolle));
+    };
+    sync();
+    s.querySelector("#m-name").oninput = sync;
+    s.querySelector("#m-farbe").onclick = e => { const b = e.target.closest("button"); if (b){ farbe = b.dataset.v; sync(); } };
+    const r = s.querySelector("#m-rolle"); if (r) r.onclick = e => { const b = e.target.closest("button"); if (b){ rolle = b.dataset.v; sync(); } };
+    s.querySelector("#m-nofoto").onclick = () => { foto = ""; sync(); };
+    s.querySelector("#m-foto").onchange = async e => { const f = e.target.files[0]; if (!f) return; try { foto = await resizePhoto(f); sync(); } catch { toast("Dieses Bild lässt sich nicht öffnen."); } };
+    s.querySelector("#cancel").onclick = closeSheet;
+    const collect = () => ({ name: s.querySelector("#m-name").value.trim(), farbe, foto, alter: s.querySelector("#m-alter").value.trim(), beschreibung: s.querySelector("#m-desc").value.trim(), rolle: canRole ? rolle : (x.rolle || "kind"), reihe: m?.reihe ?? members().length });
+    const ownBtn = s.querySelector("#m-own");
+    if (ownBtn) ownBtn.onclick = () => { const d = collect(); if (d.name) write({ [`mitglieder/${m.id}`]: d }); taskForm(null, { modus: "persoenlich", wer: [m.id], kategorie: "musik", minuten: 20 }); };
+    s.querySelectorAll("[data-own]").forEach(b => b.onclick = () => taskForm(task(b.dataset.own)));
+    const del = s.querySelector("#m-del");
+    if (del) del.onclick = () => { if (!del.dataset.c){ del.dataset.c = 1; del.textContent = "Wirklich entfernen?"; return; }
+      const u = { [`mitglieder/${m.id}`]: null };
+      for (const a of tasks()) if (fixedWer(a).includes(m.id)) { if (modus(a) === "persoenlich") u[`aufgaben/${a.id}`] = null; else u[`aufgaben/${a.id}/wer`] = fixedWer(a).filter(i => i !== m.id); }
+      write(u); closeSheet(); toast("Entfernt"); };
+    s.onsubmit = e => {
+      e.preventDefault(); const d = collect();
+      if (!d.name){ const er = s.querySelector("#m-err"); er.textContent = "Bitte gib einen Namen ein."; er.hidden = false; return; }
+      write({ [`mitglieder/${m ? m.id : uid()}`]: d }); closeSheet(); toast("Gespeichert");
+    };
+  });
+}
+function pinSheet(){
+  openSheet(`<h2>Admin-PIN</h2><p class="hint">Damit die Kinder nicht ins Admin-Profil wechseln oder die Küchen-Ansicht beenden. Leer lassen entfernt die PIN.</p>
+    <div class="field"><label for="pinNew">Neue PIN</label><input id="pinNew" inputmode="numeric" maxlength="8" autocomplete="off"></div>
+    <div class="sheet-actions"><div class="right"><button type="button" class="btn ghost" id="cancel">Abbrechen</button><button class="btn" type="submit">Speichern</button></div></div>`, s => {
+    s.querySelector("#cancel").onclick = closeSheet;
+    s.onsubmit = e => { e.preventDefault(); const pin = s.querySelector("#pinNew").value.trim(); write({ "settings/pin": pin || null }); closeSheet(); toast(pin ? "PIN gespeichert" : "PIN entfernt"); };
+  });
+}
+
+let toastTimer;
+function toast(msg){ clearTimeout(toastTimer); $("#toastHost").innerHTML = `<div class="toast" role="status">${esc(msg)}</div>`; toastTimer = setTimeout(() => $("#toastHost").innerHTML = "", 2800); }
+async function copyText(t){ try { await navigator.clipboard.writeText(t); toast("Kopiert"); } catch { toast("Bitte den Text markieren und kopieren."); } }
+
+// ---------- Küchen-Modus ----------
+let wakeLock = null;
+async function keepAwake(){ try { if (kitchenMode && document.visibilityState === "visible" && navigator.wakeLock && !wakeLock){ wakeLock = await navigator.wakeLock.request("screen"); wakeLock.addEventListener("release", () => { wakeLock = null; }); } } catch(_){ wakeLock = null; } }
+document.addEventListener("visibilitychange", () => { keepAwake(); if (document.visibilityState === "visible") render(); });
+function enterKitchen(){ kitchenMode = true; ls.set("fp_kitchen", true); whoForced = false; closeSheet(); $("#fullHost").innerHTML = ""; render(); keepAwake(); scrollTo(0,0); }
+function exitKitchen(){ pinGate("Küchen-Ansicht beenden", () => { kitchenMode = false; ls.set("fp_kitchen", false); if (wakeLock){ wakeLock.release().catch(()=>{}); wakeLock = null; } render(); }, true); }
+
+// ---------- Ereignisse ----------
+function handleTick(b){
+  const a = task(b.dataset.tick), mid = b.dataset.mid, ctx = b.dataset.ctx; if (!a) return;
+  if (ctx === "kitchen" && !opt("kuecheAbhaken")){ toast("Abhaken bitte am Handy – so hat Mama es eingestellt."); return; }
+  if (ctx !== "kitchen" && !isAdmin() && !(mid === meId && opt("handyAbhaken"))){ toast(mid === meId ? "Abhaken geht nur am Küchen-iPad." : "Das ist nicht deine Aufgabe."); return; }
+  const on = !doneBy(a, mid); if (on) justDone = a.id + "_" + mid;
+  setDone(a, mid, on, ctx);
+}
+document.addEventListener("click", e => {
+  const q = sel => e.target.closest(sel); let b;
+  if ((b = q("[data-tab]")) && b.closest("#tabbar")){ tab = b.dataset.tab; ls.set("fp_tab", tab); render(); scrollTo(0,0); return; }
+  if ((b = q("[data-tick]"))) return handleTick(b);
+  if ((b = q("[data-free]"))){ const a = task(b.dataset.free); if (!a) return; return b.dataset.ctx === "kitchen" ? whoSheet(a) : infoSheet(a, b.dataset.ctx); }
+  if ((b = q("[data-info]"))){ const a = task(b.dataset.info); if (a) infoSheet(a, kitchenMode ? "kitchen" : "phone"); return; }
+  if ((b = q("[data-edit]"))) return taskForm(task(b.dataset.edit));
+  if ((b = q("[data-edit-m]"))) return memberForm(member(b.dataset.editM));
+  if ((b = q("[data-opt]"))){ const k = b.dataset.opt; write({ [`settings/${k}`]: !opt(k) }); return; }
+  if ((b = q("[data-copy]"))) return copyText(b.dataset.copy);
+  if ((b = q("[data-me]"))) return chooseMe(b.dataset.me);
+  if (q("#fab")) return taskForm();
+  if (q("#runAI")) return makePlan(today(), true);
+  if (q("#seedTasks")) { write(seedTaskUpdates()); toast("Hausarbeiten angelegt"); return; }
+  if (q("#openKitchen") || q("#startKitchen") || q("#whoKitchen")) return enterKitchen();
+  if (q("#exitKitchen")) return exitKitchen();
+  if (q("#addMember")) return memberForm();
+  if (q("#switchMe") || q("#switchMe2")){ whoForced = true; renderWho(); return; }
+  if (q("#whoCancel")){ whoForced = false; render(); return; }
+  if (q("#setPin")) return pinSheet();
+  if (q("#testPush")){ push("Test vom Familienplaner", "Push-Nachrichten funktionieren!", "tada"); toast("Test gesendet – kommt er in ntfy an?"); return; }
+  if (q("#saveHints")){ write({ "settings/kiHinweise": $("#kiHints").value.trim() }); $("#kiHints").blur(); toast("Hinweise gespeichert"); return; }
+  if (q("#delKey")){ write({ "settings/geminiKey": null, "settings/geminiModel": null }); toast("Schlüssel entfernt"); return; }
+  if (q("#saveKey")) return saveKey();
+  if (q("#newFamily")){ CODE = newCode(); ls.set("fp_code", CODE); S.loaded = false; write({ "settings/erstellt": Date.now() }).then(connect); return; }
+});
+document.addEventListener("change", e => { if (e.target.id === "kiTime" && e.target.value){ write({ "settings/kiUhrzeit": e.target.value }); e.target.blur(); toast("Uhrzeit gespeichert"); } });
+document.addEventListener("submit", e => {
+  if (e.target.id === "joinForm"){ e.preventDefault(); const c = $("#joinCode").value.trim().toLowerCase().replace(/[^a-z0-9]/g, ""); if (c.length < 6){ toast("Der Code ist zu kurz."); return; } get(ref(db, `fam/${c}/settings/erstellt`)).then(snap => { if (!snap.exists()){ toast("Diesen Familien-Code gibt es nicht. Bitte prüfen."); return; } CODE = c; ls.set("fp_code", c); S.loaded = false; connect(); }).catch(() => toast("Keine Verbindung. Bitte Internet prüfen.")); return; }
+  if (e.target.id === "firstForm"){
+    e.preventDefault();
+    const name = $("#firstName").value.trim() || "Mama"; const adminId = uid() + "a";
+    const u = { [`mitglieder/${adminId}`]: { name, rolle: "admin", farbe: COLORS[0], foto: "", alter: "", beschreibung: "Mutter. Verteilt die Aufgaben und übernimmt alles, was für Kinder zu schwer ist.", reihe: 0 } };
+    if ($("#withFamily").checked){
+      const e1 = uid()+"e", d1 = uid()+"d", h1 = uid()+"h";
+      u[`mitglieder/${e1}`] = { name: "Esther", rolle: "kind", farbe: COLORS[2], foto: "", alter: "", beschreibung: "Tochter. Hilft Mama viel im Haushalt, besonders in der Küche. Übt Geige.", reihe: 1 };
+      u[`mitglieder/${d1}`] = { name: "Daniel", rolle: "kind", farbe: COLORS[1], foto: "", alter: "", beschreibung: "Sohn. Vor allem zuständig für Spielsachen aufräumen, sein Zimmer und die Hausaufgaben.", reihe: 2 };
+      u[`mitglieder/${h1}`] = { name: "Hannah", rolle: "kind", farbe: COLORS[3], foto: "", alter: "4", beschreibung: "Die Jüngste. Nur einfache Aufgaben, z. B. eigenes Zimmer und Spielsachen.", reihe: 3 };
+      Object.assign(u, seedTaskUpdates({ [`aufgaben/${uid()}g`]: { titel: "Geige üben", kategorie: "musik", minuten: 20, wiederholung: "taeglich", tage: [], datum: "", modus: "persoenlich", wer: [e1], jeder: false, erinnerung: "18:00", beschreibung: "20 Minuten üben, mit Tonleitern anfangen.", erstellt: Date.now() } }));
+    }
+    meId = adminId; ls.set("fp_me", adminId); write(u); $("#fullHost").innerHTML = ""; tab = "einstellungen"; ls.set("fp_tab", tab);
+  }
+});
+async function saveKey(){
+  const v = $("#gemKey").value.trim(), st = $("#keyStatus");
+  if (!v && !S.settings.geminiKey){ toast("Bitte den Schlüssel einfügen."); return; }
+  const key = v || S.settings.geminiKey;
+  st.textContent = "Teste den Schlüssel …";
+  try {
+    const models = await listModels(key);
+    if (!models.length) throw new Error("Mit diesem Schlüssel ist kein passendes KI-Modell verfügbar.");
+    await write({ "settings/geminiKey": key, "settings/geminiModel": models[0] });
+    st.textContent = `Funktioniert! Modell: ${models[0]}`; $("#gemKey").value = ""; toast("KI-Schlüssel gespeichert");
+  } catch(e){ st.textContent = e.message || "Der Schlüssel funktioniert nicht."; }
+}
+function afterLoad(){ tick(); }
+
+setInterval(() => { if (!$("#sheetHost").innerHTML) render(); tick(); }, 30000);
+render();
+connect();
+if (kitchenMode) keepAwake();
+</script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+{
+  "name": "Familienplaner",
+  "short_name": "Familienplaner",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#EEF2F1",
+  "theme_color": "#1D6B70",
+  "icons": [{ "src": "icon.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }]
+}
